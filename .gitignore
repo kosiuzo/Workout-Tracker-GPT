@@ -1,0 +1,45 @@
+# Supabase
+.branches
+.temp
+supabase/.branches
+supabase/.temp
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Supabase local config (contains secrets)
+.supabase/
+
+# Node modules (if you add any tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Database dumps (may contain sensitive data)
+*.sql.backup
+backup.sql
+
+# Local testing
+test-results/
+coverage/

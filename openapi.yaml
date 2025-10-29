@@ -1,0 +1,927 @@
+openapi: 3.1.0
+info:
+  title: Workout Tracker GPT API
+  description: |
+    Conversational workout tracking system powered by Supabase.
+    Track workouts, log sessions, and analyze progress through natural language.
+  version: 1.0.0
+  contact:
+    name: Workout Tracker Support
+
+servers:
+  - url: https://your-project-ref.supabase.co/rest/v1
+    description: Supabase Production (replace with your project URL)
+  - url: http://127.0.0.1:54321/rest/v1
+    description: Supabase Local Development
+
+security:
+  - apiKey: []
+
+paths:
+  # ==========================================
+  # WORKOUTS CRUD
+  # ==========================================
+  /workouts:
+    get:
+      summary: List all workouts
+      operationId: listWorkouts
+      tags: [Workouts]
+      parameters:
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: string
+            enum: [eq.true, eq.false]
+        - name: select
+          in: query
+          description: Columns to return
+          schema:
+            type: string
+            default: "*"
+      responses:
+        "200":
+          description: List of workouts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Workout"
+
+    post:
+      summary: Create a new workout
+      operationId: createWorkout
+      tags: [Workouts]
+      parameters:
+        - name: Prefer
+          in: header
+          schema:
+            type: string
+            default: return=representation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkoutCreate"
+      responses:
+        "201":
+          description: Workout created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+
+  /workouts/{id}:
+    get:
+      summary: Get a specific workout
+      operationId: getWorkout
+      tags: [Workouts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: select
+          in: query
+          schema:
+            type: string
+            default: "*"
+      responses:
+        "200":
+          description: Workout details
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Workout"
+
+    patch:
+      summary: Update a workout
+      operationId: updateWorkout
+      tags: [Workouts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Prefer
+          in: header
+          schema:
+            type: string
+            default: return=representation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkoutUpdate"
+      responses:
+        "200":
+          description: Workout updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+
+    delete:
+      summary: Delete a workout
+      operationId: deleteWorkout
+      tags: [Workouts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Workout deleted
+
+  # ==========================================
+  # SESSIONS CRUD
+  # ==========================================
+  /sessions:
+    get:
+      summary: List workout sessions
+      operationId: listSessions
+      tags: [Sessions]
+      parameters:
+        - name: date
+          in: query
+          description: Filter by date (e.g., eq.2025-01-15, gte.2025-01-01)
+          schema:
+            type: string
+        - name: workout_id
+          in: query
+          description: Filter by workout ID
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            default: date.desc
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+
+    post:
+      summary: Log a new workout session
+      operationId: createSession
+      tags: [Sessions]
+      parameters:
+        - name: Prefer
+          in: header
+          schema:
+            type: string
+            default: return=representation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionCreate"
+      responses:
+        "201":
+          description: Session logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+
+  /sessions/{id}:
+    get:
+      summary: Get a specific session
+      operationId: getSession
+      tags: [Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Session details
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+
+    patch:
+      summary: Update a session
+      operationId: updateSession
+      tags: [Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Prefer
+          in: header
+          schema:
+            type: string
+            default: return=representation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionUpdate"
+      responses:
+        "200":
+          description: Session updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+
+  # ==========================================
+  # EXERCISE HISTORY
+  # ==========================================
+  /exercise_history:
+    get:
+      summary: Get exercise history
+      operationId: listExerciseHistory
+      tags: [History]
+      parameters:
+        - name: exercise_name
+          in: query
+          description: Filter by exercise name
+          schema:
+            type: string
+        - name: date
+          in: query
+          description: Filter by date (e.g., gte.2025-01-01)
+          schema:
+            type: string
+        - name: workout_id
+          in: query
+          description: Filter by workout ID
+          schema:
+            type: string
+        - name: order
+          in: query
+          schema:
+            type: string
+            default: date.desc
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: Exercise history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExerciseHistory"
+
+  # ==========================================
+  # WORKOUT HISTORY
+  # ==========================================
+  /workout_history:
+    get:
+      summary: Get workout history
+      operationId: listWorkoutHistory
+      tags: [History]
+      parameters:
+        - name: date
+          in: query
+          description: Filter by date (e.g., gte.2025-01-01)
+          schema:
+            type: string
+        - name: workout_id
+          in: query
+          description: Filter by workout ID
+          schema:
+            type: string
+        - name: order
+          in: query
+          schema:
+            type: string
+            default: date.desc
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: Workout history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkoutHistory"
+
+  # ==========================================
+  # RPC FUNCTIONS
+  # ==========================================
+  /rpc/set_active_workout:
+    post:
+      summary: Activate a workout plan
+      operationId: setActiveWorkout
+      tags: [RPC Functions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workout_uuid]
+              properties:
+                workout_uuid:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Workout activated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  workout_id:
+                    type: string
+                  workout_name:
+                    type: string
+
+  /rpc/get_active_workout:
+    post:
+      summary: Get the currently active workout
+      operationId: getActiveWorkout
+      tags: [RPC Functions]
+      responses:
+        "200":
+          description: Active workout
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  workout:
+                    $ref: "#/components/schemas/Workout"
+
+  /rpc/get_workout_for_day:
+    post:
+      summary: Get workout plan for a specific day
+      operationId: getWorkoutForDay
+      tags: [RPC Functions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [day_name]
+              properties:
+                day_name:
+                  type: string
+                  enum: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+                workout_uuid:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        "200":
+          description: Workout for the day
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  workout_id:
+                    type: string
+                  workout_name:
+                    type: string
+                  day:
+                    type: string
+                  exercises:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Exercise"
+
+  /rpc/calc_all_history:
+    post:
+      summary: Calculate workout and exercise history
+      operationId: calcAllHistory
+      tags: [RPC Functions]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date_override:
+                  type: string
+                  format: date
+                  nullable: true
+      responses:
+        "200":
+          description: History calculated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  date:
+                    type: string
+                  message:
+                    type: string
+
+  /rpc/get_recent_progress:
+    post:
+      summary: Get recent workout progress
+      operationId: getRecentProgress
+      tags: [RPC Functions]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                days_back:
+                  type: integer
+                  default: 7
+                workout_uuid:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        "200":
+          description: Recent progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  days_back:
+                    type: integer
+                  history:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WorkoutHistory"
+
+  /rpc/get_exercise_progress:
+    post:
+      summary: Get progress for a specific exercise
+      operationId: getExerciseProgress
+      tags: [RPC Functions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [exercise_name_param]
+              properties:
+                exercise_name_param:
+                  type: string
+                days_back:
+                  type: integer
+                  default: 30
+                workout_uuid:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        "200":
+          description: Exercise progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  exercise:
+                    type: string
+                  history:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExerciseHistory"
+
+  /rpc/update_workout_day_weight:
+    post:
+      summary: Update exercise weight in workout template
+      operationId: updateWorkoutDayWeight
+      tags: [RPC Functions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workout_uuid, day_name, exercise_name, new_weight]
+              properties:
+                workout_uuid:
+                  type: string
+                  format: uuid
+                day_name:
+                  type: string
+                exercise_name:
+                  type: string
+                new_weight:
+                  type: integer
+      responses:
+        "200":
+          description: Weight updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateResult"
+
+  /rpc/update_entry_weight:
+    post:
+      summary: Update set weight in session
+      operationId: updateEntryWeight
+      tags: [RPC Functions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_uuid, exercise_name, set_number, new_weight]
+              properties:
+                session_uuid:
+                  type: string
+                  format: uuid
+                exercise_name:
+                  type: string
+                set_number:
+                  type: integer
+                new_weight:
+                  type: integer
+      responses:
+        "200":
+          description: Weight updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateResult"
+
+  /rpc/update_entry_reps:
+    post:
+      summary: Update set reps in session
+      operationId: updateEntryReps
+      tags: [RPC Functions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_uuid, exercise_name, set_number, new_reps]
+              properties:
+                session_uuid:
+                  type: string
+                  format: uuid
+                exercise_name:
+                  type: string
+                set_number:
+                  type: integer
+                new_reps:
+                  type: integer
+      responses:
+        "200":
+          description: Reps updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateResult"
+
+  /rpc/add_exercise_to_day:
+    post:
+      summary: Add exercise to workout day
+      operationId: addExerciseToDay
+      tags: [RPC Functions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workout_uuid, day_name, exercise_name, sets, reps, weight]
+              properties:
+                workout_uuid:
+                  type: string
+                  format: uuid
+                day_name:
+                  type: string
+                exercise_name:
+                  type: string
+                sets:
+                  type: integer
+                reps:
+                  type: integer
+                weight:
+                  type: integer
+                superset_group:
+                  type: string
+                  nullable: true
+                notes:
+                  type: string
+                  nullable: true
+      responses:
+        "200":
+          description: Exercise added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /rpc/remove_exercise_from_day:
+    post:
+      summary: Remove exercise from workout day
+      operationId: removeExerciseFromDay
+      tags: [RPC Functions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workout_uuid, day_name, exercise_name]
+              properties:
+                workout_uuid:
+                  type: string
+                  format: uuid
+                day_name:
+                  type: string
+                exercise_name:
+                  type: string
+      responses:
+        "200":
+          description: Exercise removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+# ==========================================
+# COMPONENTS
+# ==========================================
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: apikey
+      description: Supabase anon key
+
+  schemas:
+    Workout:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        days:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/Exercise"
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WorkoutCreate:
+      type: object
+      required: [name, days]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        days:
+          type: object
+        is_active:
+          type: boolean
+          default: false
+
+    WorkoutUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        days:
+          type: object
+        is_active:
+          type: boolean
+
+    Exercise:
+      type: object
+      properties:
+        exercise:
+          type: string
+        sets:
+          type: integer
+        reps:
+          type: integer
+        weight:
+          type: integer
+        superset_group:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workout_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionEntry"
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SessionCreate:
+      type: object
+      required: [workout_id, entries]
+      properties:
+        workout_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionEntry"
+        notes:
+          type: string
+
+    SessionUpdate:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionEntry"
+        notes:
+          type: string
+
+    SessionEntry:
+      type: object
+      required: [exercise, set, reps, weight]
+      properties:
+        exercise:
+          type: string
+        set:
+          type: integer
+        reps:
+          type: integer
+        weight:
+          type: integer
+
+    ExerciseHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workout_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        date:
+          type: string
+          format: date
+        total_sets:
+          type: integer
+        total_reps:
+          type: integer
+        total_volume:
+          type: integer
+        max_weight:
+          type: integer
+        avg_weight:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+
+    WorkoutHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workout_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        total_volume:
+          type: integer
+        total_sets:
+          type: integer
+        total_reps:
+          type: integer
+        num_exercises:
+          type: integer
+        duration_minutes:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    UpdateResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        old_weight:
+          type: integer
+        new_weight:
+          type: integer
