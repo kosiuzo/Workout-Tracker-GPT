@@ -28,7 +28,7 @@ supabase db reset
 open http://127.0.0.1:54323
 ```
 
-**See [SETUP.md](./SETUP.md) for complete installation guide.**
+**See [SETUP.md](./docs/SETUP.md) for complete installation guide.**
 
 ## Architecture
 
@@ -42,7 +42,7 @@ Supabase REST API + RPC Functions
 PostgreSQL + JSONB Storage
 ```
 
-**Read [ARCHITECTURE.md](./ARCHITECTURE.md) for system design details.**
+**Read [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for system design details.**
 
 ## Project Structure
 
@@ -55,9 +55,12 @@ Workout-Tracker-GPT/
 │   │   └── 20250101000002_create_json_manipulation_functions.sql
 │   ├── seed.sql                    # Sample Push/Pull/Legs plan
 │   └── config.toml                 # Supabase configuration
-├── openapi.yaml                     # Custom GPT API specification
-├── ARCHITECTURE.md                  # System design documentation
-├── SETUP.md                        # Installation & deployment guide
+├── docs/
+│   ├── ARCHITECTURE.md             # System design documentation
+│   ├── SETUP.md                    # Installation & deployment guide
+│   └── implementation-notes/       # Implementation details and tooling
+├── openapi-gpt-optimized.yaml      # GPT-optimized API spec
+├── openapi-all-endpoints.yaml      # Complete API reference
 └── README.md                       # This file
 ```
 
@@ -96,7 +99,7 @@ Workout-Tracker-GPT/
 | `get_recent_progress(days_back)` | Progress summary |
 | `get_exercise_progress(exercise)` | Exercise trend analysis |
 
-**See [ARCHITECTURE.md](./ARCHITECTURE.md#rpc-functions) for complete function reference.**
+**See [ARCHITECTURE.md](./docs/ARCHITECTURE.md#rpc-functions) for complete function reference.**
 
 ## Usage Examples
 
@@ -173,17 +176,17 @@ supabase link --project-ref your-ref
 supabase db push
 ```
 
-**Full deployment guide: [SETUP.md](./SETUP.md#production-deployment)**
+**Full deployment guide: [SETUP.md](./docs/SETUP.md#production-deployment)**
 
 ## Custom GPT Setup
 
 1. Create Supabase project and get API credentials
-2. Update [openapi.yaml](./openapi.yaml) with your project URL
+2. Update [openapi-gpt-optimized.yaml](./openapi-gpt-optimized.yaml) with your project URL
 3. Create Custom GPT at [chat.openai.com/gpts/editor](https://chat.openai.com/gpts/editor)
 4. Import OpenAPI spec and configure API key authentication
 5. Test with natural language prompts
 
-**Complete walkthrough: [SETUP.md](./SETUP.md#custom-gpt-configuration)**
+**Complete walkthrough: [SETUP.md](./docs/SETUP.md#custom-gpt-configuration)**
 
 ## Tech Stack
 
