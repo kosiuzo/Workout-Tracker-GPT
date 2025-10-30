@@ -39,6 +39,7 @@ paths:
               type: object
               required:
                 - workout_name
+                - workout_days
               properties:
                 workout_name:
                   type: string
@@ -99,6 +100,41 @@ paths:
                     format: uuid
                   message:
                     type: string
+
+  /rpc/delete_workout:
+    post:
+      operationId: deleteWorkout
+      summary: Delete a workout plan
+      description: Deletes a workout plan by UUID. Cannot delete the active workout.
+      tags:
+        - Workouts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - workout_uuid
+              properties:
+                workout_uuid:
+                  type: string
+                  format: uuid
+                  description: UUID of the workout to delete
+      responses:
+        '200':
+          description: Workout deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+      security:
+        - apiKeyAuth: []
 
   /rpc/get_active_workout:
     post:
