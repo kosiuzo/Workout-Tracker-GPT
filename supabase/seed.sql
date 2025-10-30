@@ -376,9 +376,9 @@ values (
 -- Run aggregation functions to populate history tables
 
 -- Calculate exercise and workout history for each session date
-select calc_all_history(current_date - interval '3 days');
-select calc_all_history(current_date - interval '2 days');
-select calc_all_history(current_date - interval '1 day');
+select calc_all_history((current_date - interval '3 days')::date);
+select calc_all_history((current_date - interval '2 days')::date);
+select calc_all_history((current_date - interval '1 day')::date);
 
 -- =====================================================
 -- 4. VERIFICATION QUERIES

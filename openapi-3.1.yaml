@@ -1,0 +1,2094 @@
+openapi: 3.0.0
+info:
+  description: ""
+  title: standard public schema
+  version: 13.0.5
+paths:
+  /:
+    get:
+      responses:
+        "200":
+          description: OK
+      summary: OpenAPI description (this document)
+      tags:
+        - Introspection
+  /workouts:
+    get:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.workouts.id"
+        - $ref: "#/components/parameters/rowFilter.workouts.name"
+        - $ref: "#/components/parameters/rowFilter.workouts.description"
+        - $ref: "#/components/parameters/rowFilter.workouts.days"
+        - $ref: "#/components/parameters/rowFilter.workouts.is_active"
+        - $ref: "#/components/parameters/rowFilter.workouts.created_at"
+        - $ref: "#/components/parameters/rowFilter.workouts.updated_at"
+        - $ref: "#/components/parameters/select"
+        - $ref: "#/components/parameters/order"
+        - $ref: "#/components/parameters/range"
+        - $ref: "#/components/parameters/rangeUnit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/preferCount"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/workouts"
+                type: array
+            application/vnd.pgrst.object+json;nulls=stripped:
+              schema:
+                items:
+                  $ref: "#/components/schemas/workouts"
+                type: array
+            application/vnd.pgrst.object+json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/workouts"
+                type: array
+            text/csv:
+              schema:
+                items:
+                  $ref: "#/components/schemas/workouts"
+                type: array
+        "206":
+          description: Partial Content
+      summary: Workout templates with flexible JSONB structure for days and exercises
+      tags:
+        - workouts
+    post:
+      parameters:
+        - $ref: "#/components/parameters/select"
+        - $ref: "#/components/parameters/preferPost"
+      requestBody:
+        $ref: "#/components/requestBodies/workouts"
+      responses:
+        "201":
+          description: Created
+      summary: Workout templates with flexible JSONB structure for days and exercises
+      tags:
+        - workouts
+    delete:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.workouts.id"
+        - $ref: "#/components/parameters/rowFilter.workouts.name"
+        - $ref: "#/components/parameters/rowFilter.workouts.description"
+        - $ref: "#/components/parameters/rowFilter.workouts.days"
+        - $ref: "#/components/parameters/rowFilter.workouts.is_active"
+        - $ref: "#/components/parameters/rowFilter.workouts.created_at"
+        - $ref: "#/components/parameters/rowFilter.workouts.updated_at"
+        - $ref: "#/components/parameters/preferReturn"
+      responses:
+        "204":
+          description: No Content
+      summary: Workout templates with flexible JSONB structure for days and exercises
+      tags:
+        - workouts
+    patch:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.workouts.id"
+        - $ref: "#/components/parameters/rowFilter.workouts.name"
+        - $ref: "#/components/parameters/rowFilter.workouts.description"
+        - $ref: "#/components/parameters/rowFilter.workouts.days"
+        - $ref: "#/components/parameters/rowFilter.workouts.is_active"
+        - $ref: "#/components/parameters/rowFilter.workouts.created_at"
+        - $ref: "#/components/parameters/rowFilter.workouts.updated_at"
+        - $ref: "#/components/parameters/preferReturn"
+      requestBody:
+        $ref: "#/components/requestBodies/workouts"
+      responses:
+        "204":
+          description: No Content
+      summary: Workout templates with flexible JSONB structure for days and exercises
+      tags:
+        - workouts
+  /workout_history:
+    get:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.workout_history.id"
+        - $ref: "#/components/parameters/rowFilter.workout_history.workout_id"
+        - $ref: "#/components/parameters/rowFilter.workout_history.date"
+        - $ref: "#/components/parameters/rowFilter.workout_history.total_volume"
+        - $ref: "#/components/parameters/rowFilter.workout_history.total_sets"
+        - $ref: "#/components/parameters/rowFilter.workout_history.total_reps"
+        - $ref: "#/components/parameters/rowFilter.workout_history.num_exercises"
+        - $ref: "#/components/parameters/rowFilter.workout_history.duration_minutes"
+        - $ref: "#/components/parameters/rowFilter.workout_history.created_at"
+        - $ref: "#/components/parameters/rowFilter.workout_history.updated_at"
+        - $ref: "#/components/parameters/select"
+        - $ref: "#/components/parameters/order"
+        - $ref: "#/components/parameters/range"
+        - $ref: "#/components/parameters/rangeUnit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/preferCount"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/workout_history"
+                type: array
+            application/vnd.pgrst.object+json;nulls=stripped:
+              schema:
+                items:
+                  $ref: "#/components/schemas/workout_history"
+                type: array
+            application/vnd.pgrst.object+json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/workout_history"
+                type: array
+            text/csv:
+              schema:
+                items:
+                  $ref: "#/components/schemas/workout_history"
+                type: array
+        "206":
+          description: Partial Content
+      summary: Daily aggregated totals per workout (rolled up from exercise_history)
+      tags:
+        - workout_history
+    post:
+      parameters:
+        - $ref: "#/components/parameters/select"
+        - $ref: "#/components/parameters/preferPost"
+      requestBody:
+        $ref: "#/components/requestBodies/workout_history"
+      responses:
+        "201":
+          description: Created
+      summary: Daily aggregated totals per workout (rolled up from exercise_history)
+      tags:
+        - workout_history
+    delete:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.workout_history.id"
+        - $ref: "#/components/parameters/rowFilter.workout_history.workout_id"
+        - $ref: "#/components/parameters/rowFilter.workout_history.date"
+        - $ref: "#/components/parameters/rowFilter.workout_history.total_volume"
+        - $ref: "#/components/parameters/rowFilter.workout_history.total_sets"
+        - $ref: "#/components/parameters/rowFilter.workout_history.total_reps"
+        - $ref: "#/components/parameters/rowFilter.workout_history.num_exercises"
+        - $ref: "#/components/parameters/rowFilter.workout_history.duration_minutes"
+        - $ref: "#/components/parameters/rowFilter.workout_history.created_at"
+        - $ref: "#/components/parameters/rowFilter.workout_history.updated_at"
+        - $ref: "#/components/parameters/preferReturn"
+      responses:
+        "204":
+          description: No Content
+      summary: Daily aggregated totals per workout (rolled up from exercise_history)
+      tags:
+        - workout_history
+    patch:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.workout_history.id"
+        - $ref: "#/components/parameters/rowFilter.workout_history.workout_id"
+        - $ref: "#/components/parameters/rowFilter.workout_history.date"
+        - $ref: "#/components/parameters/rowFilter.workout_history.total_volume"
+        - $ref: "#/components/parameters/rowFilter.workout_history.total_sets"
+        - $ref: "#/components/parameters/rowFilter.workout_history.total_reps"
+        - $ref: "#/components/parameters/rowFilter.workout_history.num_exercises"
+        - $ref: "#/components/parameters/rowFilter.workout_history.duration_minutes"
+        - $ref: "#/components/parameters/rowFilter.workout_history.created_at"
+        - $ref: "#/components/parameters/rowFilter.workout_history.updated_at"
+        - $ref: "#/components/parameters/preferReturn"
+      requestBody:
+        $ref: "#/components/requestBodies/workout_history"
+      responses:
+        "204":
+          description: No Content
+      summary: Daily aggregated totals per workout (rolled up from exercise_history)
+      tags:
+        - workout_history
+  /exercise_history:
+    get:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.exercise_history.id"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.workout_id"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.exercise_name"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.date"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.total_sets"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.total_reps"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.total_volume"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.max_weight"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.avg_weight"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.created_at"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.updated_at"
+        - $ref: "#/components/parameters/select"
+        - $ref: "#/components/parameters/order"
+        - $ref: "#/components/parameters/range"
+        - $ref: "#/components/parameters/rangeUnit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/preferCount"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/exercise_history"
+                type: array
+            application/vnd.pgrst.object+json;nulls=stripped:
+              schema:
+                items:
+                  $ref: "#/components/schemas/exercise_history"
+                type: array
+            application/vnd.pgrst.object+json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/exercise_history"
+                type: array
+            text/csv:
+              schema:
+                items:
+                  $ref: "#/components/schemas/exercise_history"
+                type: array
+        "206":
+          description: Partial Content
+      summary: Daily aggregated totals per exercise per workout
+      tags:
+        - exercise_history
+    post:
+      parameters:
+        - $ref: "#/components/parameters/select"
+        - $ref: "#/components/parameters/preferPost"
+      requestBody:
+        $ref: "#/components/requestBodies/exercise_history"
+      responses:
+        "201":
+          description: Created
+      summary: Daily aggregated totals per exercise per workout
+      tags:
+        - exercise_history
+    delete:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.exercise_history.id"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.workout_id"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.exercise_name"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.date"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.total_sets"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.total_reps"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.total_volume"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.max_weight"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.avg_weight"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.created_at"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.updated_at"
+        - $ref: "#/components/parameters/preferReturn"
+      responses:
+        "204":
+          description: No Content
+      summary: Daily aggregated totals per exercise per workout
+      tags:
+        - exercise_history
+    patch:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.exercise_history.id"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.workout_id"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.exercise_name"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.date"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.total_sets"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.total_reps"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.total_volume"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.max_weight"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.avg_weight"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.created_at"
+        - $ref: "#/components/parameters/rowFilter.exercise_history.updated_at"
+        - $ref: "#/components/parameters/preferReturn"
+      requestBody:
+        $ref: "#/components/requestBodies/exercise_history"
+      responses:
+        "204":
+          description: No Content
+      summary: Daily aggregated totals per exercise per workout
+      tags:
+        - exercise_history
+  /sessions:
+    get:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.sessions.id"
+        - $ref: "#/components/parameters/rowFilter.sessions.workout_id"
+        - $ref: "#/components/parameters/rowFilter.sessions.date"
+        - $ref: "#/components/parameters/rowFilter.sessions.entries"
+        - $ref: "#/components/parameters/rowFilter.sessions.notes"
+        - $ref: "#/components/parameters/rowFilter.sessions.created_at"
+        - $ref: "#/components/parameters/rowFilter.sessions.updated_at"
+        - $ref: "#/components/parameters/select"
+        - $ref: "#/components/parameters/order"
+        - $ref: "#/components/parameters/range"
+        - $ref: "#/components/parameters/rangeUnit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/preferCount"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/sessions"
+                type: array
+            application/vnd.pgrst.object+json;nulls=stripped:
+              schema:
+                items:
+                  $ref: "#/components/schemas/sessions"
+                type: array
+            application/vnd.pgrst.object+json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/sessions"
+                type: array
+            text/csv:
+              schema:
+                items:
+                  $ref: "#/components/schemas/sessions"
+                type: array
+        "206":
+          description: Partial Content
+      summary: Individual workout session logs with set-by-set entries
+      tags:
+        - sessions
+    post:
+      parameters:
+        - $ref: "#/components/parameters/select"
+        - $ref: "#/components/parameters/preferPost"
+      requestBody:
+        $ref: "#/components/requestBodies/sessions"
+      responses:
+        "201":
+          description: Created
+      summary: Individual workout session logs with set-by-set entries
+      tags:
+        - sessions
+    delete:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.sessions.id"
+        - $ref: "#/components/parameters/rowFilter.sessions.workout_id"
+        - $ref: "#/components/parameters/rowFilter.sessions.date"
+        - $ref: "#/components/parameters/rowFilter.sessions.entries"
+        - $ref: "#/components/parameters/rowFilter.sessions.notes"
+        - $ref: "#/components/parameters/rowFilter.sessions.created_at"
+        - $ref: "#/components/parameters/rowFilter.sessions.updated_at"
+        - $ref: "#/components/parameters/preferReturn"
+      responses:
+        "204":
+          description: No Content
+      summary: Individual workout session logs with set-by-set entries
+      tags:
+        - sessions
+    patch:
+      parameters:
+        - $ref: "#/components/parameters/rowFilter.sessions.id"
+        - $ref: "#/components/parameters/rowFilter.sessions.workout_id"
+        - $ref: "#/components/parameters/rowFilter.sessions.date"
+        - $ref: "#/components/parameters/rowFilter.sessions.entries"
+        - $ref: "#/components/parameters/rowFilter.sessions.notes"
+        - $ref: "#/components/parameters/rowFilter.sessions.created_at"
+        - $ref: "#/components/parameters/rowFilter.sessions.updated_at"
+        - $ref: "#/components/parameters/preferReturn"
+      requestBody:
+        $ref: "#/components/requestBodies/sessions"
+      responses:
+        "204":
+          description: No Content
+      summary: Individual workout session logs with set-by-set entries
+      tags:
+        - sessions
+  /rpc/create_workout:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: "Creates a new workout plan with validation. Parameters:
+                workout_name (required), workout_description (optional),
+                workout_days (JSONB object with day names as keys), make_active
+                (boolean to set as active workout)."
+              properties:
+                make_active:
+                  format: boolean
+                  type: boolean
+                workout_days:
+                  format: jsonb
+                workout_description:
+                  format: text
+                  type: string
+                workout_name:
+                  format: text
+                  type: string
+              required:
+                - workout_name
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: "Creates a new workout plan with validation. Parameters:
+                workout_name (required), workout_description (optional),
+                workout_days (JSONB object with day names as keys), make_active
+                (boolean to set as active workout)."
+              properties:
+                make_active:
+                  format: boolean
+                  type: boolean
+                workout_days:
+                  format: jsonb
+                workout_description:
+                  format: text
+                  type: string
+                workout_name:
+                  format: text
+                  type: string
+              required:
+                - workout_name
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: "Creates a new workout plan with validation. Parameters:
+                workout_name (required), workout_description (optional),
+                workout_days (JSONB object with day names as keys), make_active
+                (boolean to set as active workout)."
+              properties:
+                make_active:
+                  format: boolean
+                  type: boolean
+                workout_days:
+                  format: jsonb
+                workout_description:
+                  format: text
+                  type: string
+                workout_name:
+                  format: text
+                  type: string
+              required:
+                - workout_name
+              type: object
+          text/csv:
+            schema:
+              description: "Creates a new workout plan with validation. Parameters:
+                workout_name (required), workout_description (optional),
+                workout_days (JSONB object with day names as keys), make_active
+                (boolean to set as active workout)."
+              properties:
+                make_active:
+                  format: boolean
+                  type: boolean
+                workout_days:
+                  format: jsonb
+                workout_description:
+                  format: text
+                  type: string
+                workout_name:
+                  format: text
+                  type: string
+              required:
+                - workout_name
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: "Creates a new workout plan with validation. Parameters: workout_name
+        (required), workout_description (optional), workout_days (JSONB object
+        with day names as keys), make_active (boolean to set as active
+        workout)."
+      tags:
+        - (rpc) create_workout
+  /rpc/calc_all_history:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Runs both calc_exercise_history and calc_workout_history in a
+                single transaction for a specific date.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Runs both calc_exercise_history and calc_workout_history in a
+                single transaction for a specific date.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Runs both calc_exercise_history and calc_workout_history in a
+                single transaction for a specific date.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+          text/csv:
+            schema:
+              description: Runs both calc_exercise_history and calc_workout_history in a
+                single transaction for a specific date.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Runs both calc_exercise_history and calc_workout_history in a single
+        transaction for a specific date.
+      tags:
+        - (rpc) calc_all_history
+  /rpc/get_exercise_progress:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Returns history for a specific exercise over time.
+              properties:
+                days_back:
+                  format: integer
+                  type: integer
+                exercise_name_param:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - exercise_name_param
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Returns history for a specific exercise over time.
+              properties:
+                days_back:
+                  format: integer
+                  type: integer
+                exercise_name_param:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - exercise_name_param
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Returns history for a specific exercise over time.
+              properties:
+                days_back:
+                  format: integer
+                  type: integer
+                exercise_name_param:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - exercise_name_param
+              type: object
+          text/csv:
+            schema:
+              description: Returns history for a specific exercise over time.
+              properties:
+                days_back:
+                  format: integer
+                  type: integer
+                exercise_name_param:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - exercise_name_param
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Returns history for a specific exercise over time.
+      tags:
+        - (rpc) get_exercise_progress
+  /rpc/get_workout_for_day:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Returns the workout plan for a specific day from the active workout
+                (or specified workout).
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - day_name
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Returns the workout plan for a specific day from the active workout
+                (or specified workout).
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - day_name
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Returns the workout plan for a specific day from the active workout
+                (or specified workout).
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - day_name
+              type: object
+          text/csv:
+            schema:
+              description: Returns the workout plan for a specific day from the active workout
+                (or specified workout).
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - day_name
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Returns the workout plan for a specific day from the active workout (or
+        specified workout).
+      tags:
+        - (rpc) get_workout_for_day
+  /rpc/get_active_workout:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Returns the currently active workout with all details.
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Returns the currently active workout with all details.
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Returns the currently active workout with all details.
+              type: object
+          text/csv:
+            schema:
+              description: Returns the currently active workout with all details.
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Returns the currently active workout with all details.
+      tags:
+        - (rpc) get_active_workout
+  /rpc/update_entry_weight:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Updates a specific set weight in a session entry. Returns old and
+                new values.
+              properties:
+                exercise_name:
+                  format: text
+                  type: string
+                new_weight:
+                  format: integer
+                  type: integer
+                session_uuid:
+                  format: uuid
+                  type: string
+                set_number:
+                  format: integer
+                  type: integer
+              required:
+                - session_uuid
+                - exercise_name
+                - set_number
+                - new_weight
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Updates a specific set weight in a session entry. Returns old and
+                new values.
+              properties:
+                exercise_name:
+                  format: text
+                  type: string
+                new_weight:
+                  format: integer
+                  type: integer
+                session_uuid:
+                  format: uuid
+                  type: string
+                set_number:
+                  format: integer
+                  type: integer
+              required:
+                - session_uuid
+                - exercise_name
+                - set_number
+                - new_weight
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Updates a specific set weight in a session entry. Returns old and
+                new values.
+              properties:
+                exercise_name:
+                  format: text
+                  type: string
+                new_weight:
+                  format: integer
+                  type: integer
+                session_uuid:
+                  format: uuid
+                  type: string
+                set_number:
+                  format: integer
+                  type: integer
+              required:
+                - session_uuid
+                - exercise_name
+                - set_number
+                - new_weight
+              type: object
+          text/csv:
+            schema:
+              description: Updates a specific set weight in a session entry. Returns old and
+                new values.
+              properties:
+                exercise_name:
+                  format: text
+                  type: string
+                new_weight:
+                  format: integer
+                  type: integer
+                session_uuid:
+                  format: uuid
+                  type: string
+                set_number:
+                  format: integer
+                  type: integer
+              required:
+                - session_uuid
+                - exercise_name
+                - set_number
+                - new_weight
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Updates a specific set weight in a session entry. Returns old and new
+        values.
+      tags:
+        - (rpc) update_entry_weight
+  /rpc/add_exercise_to_day:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Adds a new exercise to a workout day. Creates the day if it does
+                not exist.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                notes:
+                  format: text
+                  type: string
+                reps:
+                  format: integer
+                  type: integer
+                sets:
+                  format: integer
+                  type: integer
+                superset_group:
+                  format: text
+                  type: string
+                weight:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+                - sets
+                - reps
+                - weight
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Adds a new exercise to a workout day. Creates the day if it does
+                not exist.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                notes:
+                  format: text
+                  type: string
+                reps:
+                  format: integer
+                  type: integer
+                sets:
+                  format: integer
+                  type: integer
+                superset_group:
+                  format: text
+                  type: string
+                weight:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+                - sets
+                - reps
+                - weight
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Adds a new exercise to a workout day. Creates the day if it does
+                not exist.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                notes:
+                  format: text
+                  type: string
+                reps:
+                  format: integer
+                  type: integer
+                sets:
+                  format: integer
+                  type: integer
+                superset_group:
+                  format: text
+                  type: string
+                weight:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+                - sets
+                - reps
+                - weight
+              type: object
+          text/csv:
+            schema:
+              description: Adds a new exercise to a workout day. Creates the day if it does
+                not exist.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                notes:
+                  format: text
+                  type: string
+                reps:
+                  format: integer
+                  type: integer
+                sets:
+                  format: integer
+                  type: integer
+                superset_group:
+                  format: text
+                  type: string
+                weight:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+                - sets
+                - reps
+                - weight
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Adds a new exercise to a workout day. Creates the day if it does not
+        exist.
+      tags:
+        - (rpc) add_exercise_to_day
+  /rpc/update_entry_reps:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Updates a specific set reps in a session entry. Returns old and new
+                values.
+              properties:
+                exercise_name:
+                  format: text
+                  type: string
+                new_reps:
+                  format: integer
+                  type: integer
+                session_uuid:
+                  format: uuid
+                  type: string
+                set_number:
+                  format: integer
+                  type: integer
+              required:
+                - session_uuid
+                - exercise_name
+                - set_number
+                - new_reps
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Updates a specific set reps in a session entry. Returns old and new
+                values.
+              properties:
+                exercise_name:
+                  format: text
+                  type: string
+                new_reps:
+                  format: integer
+                  type: integer
+                session_uuid:
+                  format: uuid
+                  type: string
+                set_number:
+                  format: integer
+                  type: integer
+              required:
+                - session_uuid
+                - exercise_name
+                - set_number
+                - new_reps
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Updates a specific set reps in a session entry. Returns old and new
+                values.
+              properties:
+                exercise_name:
+                  format: text
+                  type: string
+                new_reps:
+                  format: integer
+                  type: integer
+                session_uuid:
+                  format: uuid
+                  type: string
+                set_number:
+                  format: integer
+                  type: integer
+              required:
+                - session_uuid
+                - exercise_name
+                - set_number
+                - new_reps
+              type: object
+          text/csv:
+            schema:
+              description: Updates a specific set reps in a session entry. Returns old and new
+                values.
+              properties:
+                exercise_name:
+                  format: text
+                  type: string
+                new_reps:
+                  format: integer
+                  type: integer
+                session_uuid:
+                  format: uuid
+                  type: string
+                set_number:
+                  format: integer
+                  type: integer
+              required:
+                - session_uuid
+                - exercise_name
+                - set_number
+                - new_reps
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Updates a specific set reps in a session entry. Returns old and new
+        values.
+      tags:
+        - (rpc) update_entry_reps
+  /rpc/set_active_workout:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Activates a workout plan and deactivates all others. Returns
+                success status and workout details.
+              properties:
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Activates a workout plan and deactivates all others. Returns
+                success status and workout details.
+              properties:
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Activates a workout plan and deactivates all others. Returns
+                success status and workout details.
+              properties:
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+              type: object
+          text/csv:
+            schema:
+              description: Activates a workout plan and deactivates all others. Returns
+                success status and workout details.
+              properties:
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Activates a workout plan and deactivates all others. Returns success
+        status and workout details.
+      tags:
+        - (rpc) set_active_workout
+  /rpc/calc_workout_history:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Rolls up exercise_history into workout_history for a specific date.
+                Run after calc_exercise_history.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Rolls up exercise_history into workout_history for a specific date.
+                Run after calc_exercise_history.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Rolls up exercise_history into workout_history for a specific date.
+                Run after calc_exercise_history.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+          text/csv:
+            schema:
+              description: Rolls up exercise_history into workout_history for a specific date.
+                Run after calc_exercise_history.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Rolls up exercise_history into workout_history for a specific date. Run
+        after calc_exercise_history.
+      tags:
+        - (rpc) calc_workout_history
+  /rpc/update_workout_day_weight:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Updates a specific exercise weight in a workout day template.
+                Returns old and new values.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                new_weight:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+                - new_weight
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Updates a specific exercise weight in a workout day template.
+                Returns old and new values.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                new_weight:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+                - new_weight
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Updates a specific exercise weight in a workout day template.
+                Returns old and new values.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                new_weight:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+                - new_weight
+              type: object
+          text/csv:
+            schema:
+              description: Updates a specific exercise weight in a workout day template.
+                Returns old and new values.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                new_weight:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+                - new_weight
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Updates a specific exercise weight in a workout day template. Returns
+        old and new values.
+      tags:
+        - (rpc) update_workout_day_weight
+  /rpc/get_recent_progress:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Returns workout history for the last N days, optionally filtered by
+                workout.
+              properties:
+                days_back:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Returns workout history for the last N days, optionally filtered by
+                workout.
+              properties:
+                days_back:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Returns workout history for the last N days, optionally filtered by
+                workout.
+              properties:
+                days_back:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              type: object
+          text/csv:
+            schema:
+              description: Returns workout history for the last N days, optionally filtered by
+                workout.
+              properties:
+                days_back:
+                  format: integer
+                  type: integer
+                workout_uuid:
+                  format: uuid
+                  type: string
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Returns workout history for the last N days, optionally filtered by
+        workout.
+      tags:
+        - (rpc) get_recent_progress
+  /rpc/calc_exercise_history:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Aggregates session data into exercise_history for a specific date.
+                Idempotent - can be run multiple times safely.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Aggregates session data into exercise_history for a specific date.
+                Idempotent - can be run multiple times safely.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Aggregates session data into exercise_history for a specific date.
+                Idempotent - can be run multiple times safely.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+          text/csv:
+            schema:
+              description: Aggregates session data into exercise_history for a specific date.
+                Idempotent - can be run multiple times safely.
+              properties:
+                date_override:
+                  format: date
+                  type: string
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Aggregates session data into exercise_history for a specific date.
+        Idempotent - can be run multiple times safely.
+      tags:
+        - (rpc) calc_exercise_history
+  /rpc/remove_exercise_from_day:
+    post:
+      parameters:
+        - $ref: "#/components/parameters/preferParams"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Removes an exercise from a workout day.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+              type: object
+          application/vnd.pgrst.object+json;nulls=stripped:
+            schema:
+              description: Removes an exercise from a workout day.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+              type: object
+          application/vnd.pgrst.object+json:
+            schema:
+              description: Removes an exercise from a workout day.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+              type: object
+          text/csv:
+            schema:
+              description: Removes an exercise from a workout day.
+              properties:
+                day_name:
+                  format: text
+                  type: string
+                exercise_name:
+                  format: text
+                  type: string
+                workout_uuid:
+                  format: uuid
+                  type: string
+              required:
+                - workout_uuid
+                - day_name
+                - exercise_name
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Removes an exercise from a workout day.
+      tags:
+        - (rpc) remove_exercise_from_day
+externalDocs:
+  description: PostgREST Documentation
+  url: https://postgrest.org/en/v13/references/api.html
+servers:
+  - url: https://xcydnrhqidokisawwhzc.supabase.co:443
+components:
+  parameters:
+    preferParams:
+      name: Prefer
+      description: Preference
+      required: false
+      in: header
+      schema:
+        type: string
+        enum: []
+    preferReturn:
+      name: Prefer
+      description: Preference
+      required: false
+      in: header
+      schema:
+        type: string
+        enum:
+          - return=representation
+          - return=minimal
+          - return=none
+    preferCount:
+      name: Prefer
+      description: Preference
+      required: false
+      in: header
+      schema:
+        type: string
+        enum:
+          - count=none
+    preferPost:
+      name: Prefer
+      description: Preference
+      required: false
+      in: header
+      schema:
+        type: string
+        enum:
+          - return=representation
+          - return=minimal
+          - return=none
+          - resolution=ignore-duplicates
+          - resolution=merge-duplicates
+    select:
+      name: select
+      description: Filtering Columns
+      required: false
+      in: query
+      schema:
+        type: string
+    on_conflict:
+      name: on_conflict
+      description: On Conflict
+      required: false
+      in: query
+      schema:
+        type: string
+    order:
+      name: order
+      description: Ordering
+      required: false
+      in: query
+      schema:
+        type: string
+    range:
+      name: Range
+      description: Limiting and Pagination
+      required: false
+      in: header
+      schema:
+        type: string
+    rangeUnit:
+      name: Range-Unit
+      description: Limiting and Pagination
+      required: false
+      in: header
+      schema:
+        type: string
+        default: items
+    offset:
+      name: offset
+      description: Limiting and Pagination
+      required: false
+      in: query
+      schema:
+        type: string
+    limit:
+      name: limit
+      description: Limiting and Pagination
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workouts.id:
+      name: id
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workouts.name:
+      name: name
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workouts.description:
+      name: description
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workouts.days:
+      name: days
+      description: 'JSONB object with day names as keys and exercise arrays as values.
+        Example: {"monday": [{"exercise": "Bench Press", "sets": 3, "reps": 10,
+        "weight": 135, "superset_group": "A"}]}'
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workouts.is_active:
+      name: is_active
+      description: Only one workout can be active at a time (enforced by unique index)
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workouts.created_at:
+      name: created_at
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workouts.updated_at:
+      name: updated_at
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workout_history.id:
+      name: id
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workout_history.workout_id:
+      name: workout_id
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workout_history.date:
+      name: date
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workout_history.total_volume:
+      name: total_volume
+      description: Sum of total_volume from all exercises for this workout on this date
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workout_history.total_sets:
+      name: total_sets
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workout_history.total_reps:
+      name: total_reps
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workout_history.num_exercises:
+      name: num_exercises
+      description: Count of distinct exercises performed
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workout_history.duration_minutes:
+      name: duration_minutes
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workout_history.created_at:
+      name: created_at
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.workout_history.updated_at:
+      name: updated_at
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.id:
+      name: id
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.workout_id:
+      name: workout_id
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.exercise_name:
+      name: exercise_name
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.date:
+      name: date
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.total_sets:
+      name: total_sets
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.total_reps:
+      name: total_reps
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.total_volume:
+      name: total_volume
+      description: Sum of (weight × reps) for all sets
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.max_weight:
+      name: max_weight
+      description: Maximum weight used across all sets
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.avg_weight:
+      name: avg_weight
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.created_at:
+      name: created_at
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.exercise_history.updated_at:
+      name: updated_at
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.sessions.id:
+      name: id
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.sessions.workout_id:
+      name: workout_id
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.sessions.date:
+      name: date
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.sessions.entries:
+      name: entries
+      description: 'JSONB array of performed sets. Example: [{"exercise": "Bench
+        Press", "set": 1, "reps": 10, "weight": 135}, {"exercise": "Bench
+        Press", "set": 2, "reps": 9, "weight": 145}]'
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.sessions.notes:
+      name: notes
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.sessions.created_at:
+      name: created_at
+      required: false
+      in: query
+      schema:
+        type: string
+    rowFilter.sessions.updated_at:
+      name: updated_at
+      required: false
+      in: query
+      schema:
+        type: string
+  requestBodies:
+    workouts:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/workouts"
+        application/vnd.pgrst.object+json;nulls=stripped:
+          schema:
+            $ref: "#/components/schemas/workouts"
+        application/vnd.pgrst.object+json:
+          schema:
+            $ref: "#/components/schemas/workouts"
+        text/csv:
+          schema:
+            $ref: "#/components/schemas/workouts"
+      description: workouts
+    workout_history:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/workout_history"
+        application/vnd.pgrst.object+json;nulls=stripped:
+          schema:
+            $ref: "#/components/schemas/workout_history"
+        application/vnd.pgrst.object+json:
+          schema:
+            $ref: "#/components/schemas/workout_history"
+        text/csv:
+          schema:
+            $ref: "#/components/schemas/workout_history"
+      description: workout_history
+    exercise_history:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/exercise_history"
+        application/vnd.pgrst.object+json;nulls=stripped:
+          schema:
+            $ref: "#/components/schemas/exercise_history"
+        application/vnd.pgrst.object+json:
+          schema:
+            $ref: "#/components/schemas/exercise_history"
+        text/csv:
+          schema:
+            $ref: "#/components/schemas/exercise_history"
+      description: exercise_history
+    sessions:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/sessions"
+        application/vnd.pgrst.object+json;nulls=stripped:
+          schema:
+            $ref: "#/components/schemas/sessions"
+        application/vnd.pgrst.object+json:
+          schema:
+            $ref: "#/components/schemas/sessions"
+        text/csv:
+          schema:
+            $ref: "#/components/schemas/sessions"
+      description: sessions
+  schemas:
+    workouts:
+      description: Workout templates with flexible JSONB structure for days and exercises
+      required:
+        - id
+        - name
+        - days
+      properties:
+        id:
+          default: gen_random_uuid()
+          description: |-
+            Note:
+            This is a Primary Key.<pk/>
+          format: uuid
+          type: string
+        name:
+          format: text
+          type: string
+        description:
+          format: text
+          type: string
+        days:
+          description: 'JSONB object with day names as keys and exercise arrays as values.
+            Example: {"monday": [{"exercise": "Bench Press", "sets": 3, "reps":
+            10, "weight": 135, "superset_group": "A"}]}'
+          format: jsonb
+        is_active:
+          default: false
+          description: Only one workout can be active at a time (enforced by unique index)
+          format: boolean
+          type: boolean
+        created_at:
+          default: now()
+          format: timestamp with time zone
+          type: string
+        updated_at:
+          default: now()
+          format: timestamp with time zone
+          type: string
+      type: object
+    workout_history:
+      description: Daily aggregated totals per workout (rolled up from exercise_history)
+      required:
+        - id
+        - date
+        - total_volume
+        - total_sets
+        - total_reps
+        - num_exercises
+      properties:
+        id:
+          default: gen_random_uuid()
+          description: |-
+            Note:
+            This is a Primary Key.<pk/>
+          format: uuid
+          type: string
+        workout_id:
+          description: >-
+            Note:
+
+            This is a Foreign Key to `workouts.id`.<fk table='workouts' column='id'/>
+          format: uuid
+          type: string
+        date:
+          format: date
+          type: string
+        total_volume:
+          default: 0
+          description: Sum of total_volume from all exercises for this workout on this date
+          format: integer
+          type: integer
+        total_sets:
+          default: 0
+          format: integer
+          type: integer
+        total_reps:
+          default: 0
+          format: integer
+          type: integer
+        num_exercises:
+          default: 0
+          description: Count of distinct exercises performed
+          format: integer
+          type: integer
+        duration_minutes:
+          format: integer
+          type: integer
+        created_at:
+          default: now()
+          format: timestamp with time zone
+          type: string
+        updated_at:
+          default: now()
+          format: timestamp with time zone
+          type: string
+      type: object
+    exercise_history:
+      description: Daily aggregated totals per exercise per workout
+      required:
+        - id
+        - exercise_name
+        - date
+        - total_sets
+        - total_reps
+        - total_volume
+        - max_weight
+      properties:
+        id:
+          default: gen_random_uuid()
+          description: |-
+            Note:
+            This is a Primary Key.<pk/>
+          format: uuid
+          type: string
+        workout_id:
+          description: >-
+            Note:
+
+            This is a Foreign Key to `workouts.id`.<fk table='workouts' column='id'/>
+          format: uuid
+          type: string
+        exercise_name:
+          format: text
+          type: string
+        date:
+          format: date
+          type: string
+        total_sets:
+          default: 0
+          format: integer
+          type: integer
+        total_reps:
+          default: 0
+          format: integer
+          type: integer
+        total_volume:
+          default: 0
+          description: Sum of (weight × reps) for all sets
+          format: integer
+          type: integer
+        max_weight:
+          default: 0
+          description: Maximum weight used across all sets
+          format: integer
+          type: integer
+        avg_weight:
+          format: numeric
+          type: number
+        created_at:
+          default: now()
+          format: timestamp with time zone
+          type: string
+        updated_at:
+          default: now()
+          format: timestamp with time zone
+          type: string
+      type: object
+    sessions:
+      description: Individual workout session logs with set-by-set entries
+      required:
+        - id
+        - date
+        - entries
+      properties:
+        id:
+          default: gen_random_uuid()
+          description: |-
+            Note:
+            This is a Primary Key.<pk/>
+          format: uuid
+          type: string
+        workout_id:
+          description: >-
+            Note:
+
+            This is a Foreign Key to `workouts.id`.<fk table='workouts' column='id'/>
+          format: uuid
+          type: string
+        date:
+          default: CURRENT_DATE
+          format: date
+          type: string
+        entries:
+          description: 'JSONB array of performed sets. Example: [{"exercise": "Bench
+            Press", "set": 1, "reps": 10, "weight": 135}, {"exercise": "Bench
+            Press", "set": 2, "reps": 9, "weight": 145}]'
+          format: jsonb
+        notes:
+          format: text
+          type: string
+        created_at:
+          default: now()
+          format: timestamp with time zone
+          type: string
+        updated_at:
+          default: now()
+          format: timestamp with time zone
+          type: string
+      type: object

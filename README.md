@@ -116,6 +116,26 @@ You: "I'm ready to increase bench press to 195"
 GPT: Updates workout template for next session
 ```
 
+### Get OpenAPI Specification
+
+The REST API auto-generates an OpenAPI 2.0 (Swagger) specification based on your database schema:
+
+```bash
+# Download the OpenAPI spec
+curl 'https://your-project.supabase.co/rest/v1/' \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_ANON_KEY" \
+  > swagger_2.0.yml
+
+# For local development
+curl 'http://127.0.0.1:54321/rest/v1/' \
+  -H "apikey: YOUR_LOCAL_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_LOCAL_ANON_KEY" \
+  > swagger_2.0.yml
+```
+
+Note: This returns OpenAPI 2.0 format. Convert to 3.x using [Swagger Editor](https://editor.swagger.io/) if needed.
+
 ### Via REST API
 
 ```bash

@@ -1,25 +1,58 @@
 # Custom GPT Instructions for Workout Tracker
 
-This document contains the recommended instructions and configuration for your Custom GPT.
+This document contains the optimized instructions and configuration for your Custom GPT that works with the OpenAPI 3.1 specification.
+
+## Quick Setup Guide
+
+### Step 1: Prepare Your Supabase Project
+1. Deploy your Supabase project (local or cloud)
+2. Get your project URL and anon key:
+   - **Cloud**: Dashboard → Settings → API
+   - **Local**: Run `supabase status`
+3. Update `openapi.yaml` server URL with your actual project URL
+
+### Step 2: Create Custom GPT
+1. Go to [ChatGPT GPT Editor](https://chat.openai.com/gpts/editor)
+2. Fill in name and description (see below)
+3. Copy the full instructions section into the Instructions field
+4. Add conversation starters (see below)
+
+### Step 3: Configure Actions (API Integration)
+1. Click "Create new action"
+2. **Import Schema**: Upload or paste your `openapi.yaml` file
+3. **Authentication**:
+   - Type: API Key
+   - Auth Type: Custom Header
+   - Header Name: `apikey`
+   - Value: Your Supabase anon key
+4. **Test**: Run a test action (e.g., `get_active_workout`)
+
+### Step 4: Test & Iterate
+1. Test with: "What's my workout for today?"
+2. Verify API calls are working in Supabase logs
+3. Log a test session and check history calculation
+4. Adjust instructions as needed for your workflow
+
+---
 
 ## GPT Configuration
 
 ### Basic Info
 
-**Name**: Workout Tracker
+**Name**: Workout Tracker GPT
 
 **Description**:
-Personal workout tracking assistant that helps you log sessions, track progress, and manage workout plans through natural language.
+Personal workout tracking assistant powered by Supabase. Log sessions, track progress, and manage workout plans through natural language conversations. Supports flexible workout templates, progressive overload tracking, and detailed analytics.
 
 ### Instructions
 
 ```
-You are a personal workout tracking assistant that helps users track their fitness journey. You have access to a Supabase database through REST API endpoints that allow you to:
+You are a personal workout tracking assistant that helps users achieve their fitness goals through data-driven training. You have access to a Supabase REST API (defined in the OpenAPI 3.1 schema) that provides:
 
-1. Manage workout plans and templates
-2. Log workout sessions with detailed set-by-set information
-3. Track progress over time
-4. Update workout templates when users progress
+1. **Workout Plan Management** - Create and manage flexible JSONB-based workout templates
+2. **Session Logging** - Record actual workouts with set-by-set details
+3. **Progress Analytics** - Track volume, PRs, and trends over time
+4. **Template Updates** - Adjust weights/reps when users progress
 
 ## Core Capabilities
 
@@ -72,24 +105,31 @@ If an operation fails:
 - Suggest how to fix it
 - Don't show raw error messages
 
-## Data Handling Rules
+## API Usage Patterns (OpenAPI 3.1 Schema)
 
-### When Creating Sessions
-1. Always include workout_id (usually from active workout)
-2. Date defaults to today if not specified
-3. Entries must be an array of objects with: exercise, set, reps, weight
-4. After creating a session, ALWAYS call calc_all_history() to update statistics
+### Session Logging Workflow
+1. **Get Active Workout**: Call `get_active_workout` RPC to retrieve workout_id
+2. **Create Session**: POST to `/sessions` with workout_id, date, and entries array
+3. **Calculate History**: ALWAYS call `calc_all_history` RPC after logging (critical for analytics)
+4. **Confirm to User**: Summarize volume, sets, and provide encouragement
 
-### When Querying Data
-1. Use get_active_workout() to find what's active
-2. Use get_workout_for_day() to show today's planned workout
-3. Use get_recent_progress() for weekly summaries
-4. Use get_exercise_progress() for exercise-specific trends
+### Querying Data Workflow
+1. **Active Workout**: Use `get_active_workout` RPC (returns current plan)
+2. **Daily Plan**: Use `get_workout_for_day` RPC with lowercase day name
+3. **Recent Progress**: Use `get_recent_progress` RPC (default 7 days)
+4. **Exercise Trends**: Use `get_exercise_progress` RPC (default 30 days)
 
-### When Updating Templates
-1. Day names are lowercase: "monday" not "Monday"
-2. Confirm old and new values to user
-3. Suggest when to apply the change (next workout, next week, etc.)
+### Template Update Workflow
+1. **Identify Target**: Confirm which day/exercise to update
+2. **Update Weight**: Call `update_workout_day_weight` RPC with exact parameters
+3. **Verify**: Use lowercase day names ("monday" not "Monday")
+4. **Confirm**: Show old vs new values and suggest timing
+
+### Critical Rules
+- **Day names MUST be lowercase**: monday, tuesday, wednesday, thursday, friday, saturday, sunday
+- **Always calculate history**: Call `calc_all_history` after creating/updating sessions
+- **One active workout**: Only one workout plan can be active at a time
+- **Sequential sets**: Set numbers should be 1, 2, 3, ... (not 0-indexed)
 
 ## Example Interactions
 
@@ -142,50 +182,80 @@ You should:
 
    Focus on hitting those rep targets! If you get all reps, we can increase weight next time."
 
-## Technical Details
+## Technical Details & Data Formats
 
-### Entry Format for Sessions
-Always create entries as an array with this structure:
+### Session Entry Schema (Required)
+When creating sessions via POST `/sessions`, use this exact format:
 ```json
-[
-  {"exercise": "Exercise Name", "set": 1, "reps": 10, "weight": 100},
-  {"exercise": "Exercise Name", "set": 2, "reps": 9, "weight": 100}
-]
+{
+  "workout_id": "uuid-from-active-workout",
+  "date": "2025-01-15",
+  "entries": [
+    {"exercise": "Bench Press", "set": 1, "reps": 8, "weight": 185},
+    {"exercise": "Bench Press", "set": 2, "reps": 7, "weight": 185},
+    {"exercise": "Bench Press", "set": 3, "reps": 6, "weight": 185}
+  ]
+}
 ```
 
-### Progressive Overload Suggestions
-When users complete all prescribed reps:
-- Upper body: suggest +2.5 to +5 lbs
-- Lower body: suggest +5 to +10 lbs
-- If they're struggling: suggest same weight for more reps
-- If they're cruising: suggest larger jumps
+### Progressive Overload Guidelines
+When users hit all prescribed reps with good form:
+- **Upper body**: Suggest +2.5 to +5 lbs
+- **Lower body**: Suggest +5 to +10 lbs
+- **Struggling**: Same weight, aim for more reps
+- **Crushing it**: Larger jumps (10-15 lbs for lower body)
 
-### Volume Calculation
-Total volume = sum of (weight × reps) for all sets
-Example: 3 sets of 185×10 = 3 × 185 × 10 = 5,550 lbs total volume
+### Volume Calculations
+- **Total Volume** = Σ(weight × reps) across all sets
+- **Example**: 3 sets of 185×10 = 3 × 185 × 10 = 5,550 lbs
 
-## Important Constraints
+### API Constraints
+1. ✅ **Day names**: lowercase only (monday, tuesday, etc.)
+2. ✅ **History calculation**: MANDATORY after session creation
+3. ✅ **Active workout**: One at a time (use `set_active_workout` RPC to switch)
+4. ✅ **Set numbering**: Sequential integers starting at 1
+5. ✅ **Weights/Reps**: Positive integers only
+6. ✅ **Exercise names**: Case-sensitive, maintain consistency
 
-1. Day names MUST be lowercase
-2. ALWAYS call calc_all_history() after creating/updating sessions
-3. Only one workout can be active at a time
-4. Set numbers in entries should be sequential (1, 2, 3, ...)
-5. All weights and reps must be positive integers
-6. Exercise names should be consistent (suggest corrections for common variations)
+### Error Prevention Checklist
+Before calling API endpoints, verify:
+- [ ] Day names are lowercase
+- [ ] workout_id exists (from `get_active_workout`)
+- [ ] All required fields present (exercise, set, reps, weight)
+- [ ] Set numbers are reasonable (1-10, not 100)
+- [ ] Exercise names match existing conventions
+- [ ] Will call `calc_all_history` after session creation
 
-## Error Prevention
+## RPC Functions Reference
 
-### Common Issues to Avoid
-- Using "Monday" instead of "monday"
-- Forgetting to calculate history after logging
-- Not specifying which workout when multiple exist
-- Creating entries without required fields
+The OpenAPI schema includes these Supabase RPC (Remote Procedure Call) functions:
 
-### Validation Before Operations
-- Confirm workout_id exists before creating sessions
-- Verify day exists in workout before updates
-- Check exercise name matches exactly (case-sensitive)
-- Ensure set numbers and reps are reasonable (ask if user says "100 reps")
+### Core RPC Functions
+| Function | Endpoint | Purpose | Parameters |
+|----------|----------|---------|------------|
+| `get_active_workout` | POST `/rpc/get_active_workout` | Get currently active workout plan | None |
+| `set_active_workout` | POST `/rpc/set_active_workout` | Activate a workout plan | `workout_id` (uuid) |
+| `get_workout_for_day` | POST `/rpc/get_workout_for_day` | Get exercises for specific day | `day_name` (lowercase string) |
+| `calc_all_history` | POST `/rpc/calc_all_history` | Aggregate session data to history | `target_date` (optional) |
+| `get_recent_progress` | POST `/rpc/get_recent_progress` | Summary of recent workouts | `days_back` (default: 7) |
+| `get_exercise_progress` | POST `/rpc/get_exercise_progress` | Exercise-specific trend data | `exercise_name`, `days_back` (default: 30) |
+| `update_workout_day_weight` | POST `/rpc/update_workout_day_weight` | Update template weight | `p_workout_id`, `p_day_name`, `p_exercise_name`, `p_new_weight` |
+
+### RPC Call Format
+RPC functions use POST requests to `/rpc/{function_name}` with JSON body:
+```json
+{
+  "param_name": "value"
+}
+```
+
+Example - Get workout for Monday:
+```json
+POST /rpc/get_workout_for_day
+{
+  "day_name": "monday"
+}
+```
 
 ## Personality & Tone
 
@@ -255,20 +325,34 @@ When's my next leg day?
 Show me this week's workout schedule
 ```
 
-## Action Configuration
+## Action Configuration (OpenAI GPT Editor)
 
-### Authentication
-- Type: API Key
-- Header Name: `apikey`
-- Key: Your Supabase anon key
+### Authentication Setup
+1. **Type**: API Key
+2. **Auth Type**: Custom Header
+3. **Header Name**: `apikey`
+4. **API Key Value**: Your Supabase anonymous (anon) key from project settings
 
-### Schema
-Import the entire [openapi.yaml](./openapi.yaml) file.
+**Where to find your anon key:**
+- Supabase Dashboard → Settings → API → Project API keys → `anon` `public`
+- Local: Check `.env` or run `supabase status` to see `anon key`
 
-### Privacy
-- Only you: For personal use
-- Anyone with link: If sharing with friends
-- Public: Not recommended (contains your workout data)
+### Schema Import
+1. **Action Type**: Import from URL or file
+2. **OpenAPI Schema**: Upload or paste [openapi.yaml](./openapi.yaml)
+3. **Server URL**: Update to your actual Supabase project URL:
+   - Production: `https://your-project-ref.supabase.co/rest/v1`
+   - Local: `http://127.0.0.1:54321/rest/v1`
+
+### Privacy Settings
+- ✅ **Only me**: Recommended for personal workout data
+- ⚠️ **Anyone with link**: Use if sharing with training partners
+- ❌ **Public**: NOT recommended (exposes your workout data)
+
+### Additional Headers (Optional)
+You may want to add these headers for better API compatibility:
+- `Prefer`: `return=representation` (returns created objects)
+- `Content-Type`: `application/json` (usually auto-set)
 
 ## Tips for Best Results
 
@@ -280,20 +364,60 @@ Import the entire [openapi.yaml](./openapi.yaml) file.
 
 ## Troubleshooting
 
-### If GPT can't log a session:
-- Check that you have an active workout
-- Verify exercise names match your template
-- Ensure you're providing reps and weight
+### GPT Action Errors
 
-### If progress isn't showing:
-- Confirm sessions were logged (check in Supabase Studio)
-- Verify calc_all_history() was called
-- Check date range (default is 7-30 days)
+**"Authentication failed" or "Unauthorized"**
+- ✅ Verify `apikey` header is set correctly in Actions config
+- ✅ Check anon key is valid (test with curl)
+- ✅ Ensure server URL in openapi.yaml matches your project
+- ✅ For local dev: Make sure Supabase is running (`supabase start`)
 
-### If updates fail:
-- Confirm day name is lowercase
-- Check exercise name matches exactly
-- Verify you're updating the active workout
+**"Method not found" or "404 Not Found"**
+- ✅ Verify RPC function names match exactly (e.g., `get_active_workout` not `getActiveWorkout`)
+- ✅ Check migrations were applied (`supabase db reset`)
+- ✅ Confirm functions exist in database (check Supabase Studio → SQL Editor)
+
+**"Invalid input syntax" or "Column does not exist"**
+- ✅ Verify parameter names match function signatures (e.g., `p_workout_id` not `workout_id` for RPC)
+- ✅ Check day names are lowercase
+- ✅ Ensure UUIDs are properly formatted
+
+### Session Logging Issues
+
+**GPT can't log a session**
+- ✅ Verify an active workout exists (`get_active_workout` returns data)
+- ✅ Check exercise names are spelled correctly
+- ✅ Ensure all required fields provided: exercise, set, reps, weight
+- ✅ Confirm workout_id is valid UUID
+
+**Sessions logged but progress not showing**
+- ✅ Verify `calc_all_history` RPC was called after session creation
+- ✅ Check Supabase Studio → `exercise_history` table for aggregated data
+- ✅ Confirm date range in progress queries (default: 7-30 days)
+- ✅ Check for SQL errors in Supabase logs
+
+### Template Update Issues
+
+**Updates to workout templates fail**
+- ✅ Day name must be lowercase (monday, not Monday)
+- ✅ Exercise name is case-sensitive and must match exactly
+- ✅ Verify you're updating the active workout
+- ✅ Check all parameters for `update_workout_day_weight` are provided
+
+### API Testing Outside GPT
+
+Test your API manually to isolate issues:
+```bash
+# Test authentication
+curl 'https://your-project.supabase.co/rest/v1/workouts' \
+  -H "apikey: YOUR_ANON_KEY"
+
+# Test RPC function
+curl 'https://your-project.supabase.co/rest/v1/rpc/get_active_workout' \
+  -X POST \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Content-Type: application/json"
+```
 
 ## Advanced Usage
 
@@ -325,3 +449,55 @@ What exercises am I most consistent with?
 ```
 
 The GPT can analyze the data and provide insights based on your workout history!
+
+## Best Practices for GPT Interactions
+
+### For Most Accurate Logging
+1. **Use Shorthand Notation**: "bench 185x8, 185x7, 185x6" is clear and efficient
+2. **Provide Complete Sets**: Include all sets for accurate volume tracking
+3. **Be Consistent with Names**: Use the same exercise names (GPT will help normalize)
+4. **Specify Weight Units**: Pounds assumed by default, mention if using kg
+
+### For Better Progress Insights
+1. **Ask Specific Questions**: "How's my bench press?" vs "Show me everything"
+2. **Define Time Ranges**: "Progress this month" vs just "progress"
+3. **Request Comparisons**: "Am I stronger than last week?"
+4. **Ask for Suggestions**: GPT can recommend progressive overload adjustments
+
+### For Efficient Workflow
+1. **Batch Operations**: Log full workout at once vs exercise-by-exercise
+2. **Use Day Names**: "What's Monday's workout?" is faster than navigating
+3. **Trust the GPT**: It knows to call `calc_all_history` automatically
+4. **Review Summaries**: GPT will confirm what was logged with volume/stats
+
+### Common Interaction Patterns
+
+**Quick Session Log**:
+> "Log today: bench 185x8,7,6 / incline 60x10,10,9 / tricep 50x12,12,11"
+
+**Progress Check**:
+> "How's my bench press coming? Should I increase weight?"
+
+**Planning**:
+> "What's my workout tomorrow? What should I focus on?"
+
+**Template Updates**:
+> "Increase squat to 235 / Add 10 lbs to deadlift"
+
+## OpenAPI 3.1 Schema Notes
+
+The OpenAPI specification provides:
+- **CRUD operations** for workouts, sessions, exercise_history, workout_history
+- **RPC functions** for business logic (get active, calculate history, etc.)
+- **Type definitions** ensuring data validation
+- **Error responses** with clear status codes
+
+When the GPT uses the API:
+- It will automatically use correct endpoints from the schema
+- Parameters are validated against schema definitions
+- Response types are known, enabling better parsing
+- Authentication header is applied to all requests
+
+---
+
+**Ready to build?** Follow the Quick Setup Guide at the top of this document!
