@@ -24,6 +24,61 @@ security:
 
 paths:
   # Workout Management
+  /workouts:
+    get:
+      operationId: listWorkouts
+      summary: List all workout templates
+      description: Returns all saved workout templates with their exercises organized by day.
+      tags:
+        - Workouts
+      parameters:
+        - name: id
+          in: query
+          description: Filter by workout ID
+          schema:
+            type: string
+            format: uuid
+        - name: name
+          in: query
+          description: Filter by workout name
+          schema:
+            type: string
+        - name: is_active
+          in: query
+          description: Filter by active status (true/false)
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of workouts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Workout'
+    delete:
+      operationId: deleteWorkout
+      summary: Delete a workout template
+      description: Permanently removes a workout template and all associated data.
+      tags:
+        - Workouts
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: The ID of the workout to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Workout deleted successfully
+        '404':
+          description: Workout not found
+        '400':
+          description: Invalid request
+
   /rpc/create_workout:
     post:
       operationId: createWorkout
@@ -571,6 +626,38 @@ components:
       in: header
       name: apikey
   schemas:
+    Workout:
+      type: object
+      description: A complete workout template with exercises organized by day
+      required:
+        - id
+        - name
+        - days
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the workout
+        name:
+          type: string
+          description: Name of the workout plan
+        description:
+          type: string
+          description: Optional description of the workout
+        days:
+          $ref: '#/components/schemas/WorkoutDay'
+        is_active:
+          type: boolean
+          description: Whether this is the currently active workout
+        created_at:
+          type: string
+          format: date-time
+          description: When the workout was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When the workout was last updated
+
     Exercise:
       type: object
       description: A single exercise entry in a workout day
