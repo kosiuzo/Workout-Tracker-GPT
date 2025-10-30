@@ -39,6 +39,7 @@ paths:
               type: object
               required:
                 - workout_name
+                - workout_days
               properties:
                 workout_name:
                   type: string
@@ -49,40 +50,10 @@ paths:
                   description: Optional description of the workout
                   example: "Chest, shoulders, and triceps focused workout"
                 workout_days:
-                  type: object
-                  description: JSONB object with day names as keys and exercise arrays as values
-                  additionalProperties:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        exercise:
-                          type: string
-                        sets:
-                          type: integer
-                        reps:
-                          type: integer
-                        weight:
-                          type: integer
-                        superset_group:
-                          type: string
-                        notes:
-                          type: string
-                  example:
-                    monday:
-                      - exercise: "Bench Press"
-                        sets: 3
-                        reps: 10
-                        weight: 135
-                        superset_group: "A"
-                      - exercise: "Incline Dumbbell Press"
-                        sets: 3
-                        reps: 12
-                        weight: 60
-                        superset_group: "A"
+                  $ref: '#/components/schemas/WorkoutDays'
                 make_active:
                   type: boolean
-                  description: Set this workout as the active workout
+                  description: Set this workout as the active workout (optional, defaults to false)
                   default: false
       responses:
         '200':
@@ -133,8 +104,7 @@ paths:
                     $ref: '#/components/schemas/WorkoutDay'
                   is_active:
                     type: boolean
-      security:
-        - apiKeyAuth: []
+      
   /rpc/set_active_workout:
     post:
       operationId: setActiveWorkout
@@ -167,8 +137,7 @@ paths:
                     type: boolean
                   message:
                     type: string
-      security:
-        - apiKeyAuth: []
+      
   /rpc/get_workout_for_day:
     post:
       operationId: getWorkoutForDay
@@ -220,8 +189,7 @@ paths:
                           type: string
                         notes:
                           type: string
-      security:
-        - apiKeyAuth: []
+      
   # Exercise Management
   /rpc/add_exercise_to_day:
     post:
@@ -275,8 +243,7 @@ paths:
       responses:
         '200':
           description: Exercise added successfully
-      security:
-        - apiKeyAuth: []
+      
   /rpc/remove_exercise_from_day:
     post:
       operationId: removeExerciseFromDay
@@ -305,8 +272,7 @@ paths:
       responses:
         '200':
           description: Exercise removed successfully
-      security:
-        - apiKeyAuth: []
+      
   /rpc/update_workout_day_weight:
     post:
       operationId: updateWorkoutDayWeight
@@ -348,8 +314,7 @@ paths:
                     type: integer
                   new_weight:
                     type: integer
-      security:
-        - apiKeyAuth: []
+      
   # Session Management
   /rpc/create_session:
     post:
@@ -412,8 +377,7 @@ paths:
                   session_id:
                     type: string
                     format: uuid
-      security:
-        - apiKeyAuth: []
+      
   /rpc/update_entry_weight:
     post:
       operationId: updateEntryWeight
@@ -447,8 +411,7 @@ paths:
       responses:
         '200':
           description: Weight updated successfully
-      security:
-        - apiKeyAuth: []
+      
   /rpc/update_entry_reps:
     post:
       operationId: updateEntryReps
@@ -482,8 +445,7 @@ paths:
       responses:
         '200':
           description: Reps updated successfully
-      security:
-        - apiKeyAuth: []
+      
   # Progress Tracking
   /rpc/get_exercise_progress:
     post:
@@ -523,8 +485,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ProgressData'
-      security:
-        - apiKeyAuth: []
+      
   /rpc/get_recent_progress:
     post:
       operationId: getRecentProgress
@@ -557,8 +518,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ProgressData'
-      security:
-        - apiKeyAuth: []
+      
   # History Calculations
   /rpc/calc_exercise_history:
     post:
@@ -581,8 +541,7 @@ paths:
       responses:
         '200':
           description: Exercise history calculated successfully
-      security:
-        - apiKeyAuth: []
+      
   /rpc/calc_all_history:
     post:
       operationId: calcAllHistory
@@ -604,8 +563,7 @@ paths:
       responses:
         '200':
           description: All history calculated successfully
-      security:
-        - apiKeyAuth: []
+      
 components:
   securitySchemes:
     apiKeyAuth:
@@ -613,27 +571,92 @@ components:
       in: header
       name: apikey
   schemas:
-    WorkoutDay:
+    Exercise:
       type: object
-      description: Exercise list for a specific day
+      description: A single exercise entry in a workout day
+      required:
+        - exercise
+        - sets
+        - reps
+        - weight
+      properties:
+        exercise:
+          type: string
+          description: Name of the exercise (e.g., "Bench Press", "Squats")
+          example: "Bench Press"
+        sets:
+          type: integer
+          description: Number of sets to perform
+          example: 3
+        reps:
+          type: integer
+          description: Number of repetitions per set
+          example: 10
+        weight:
+          type: integer
+          description: Weight in pounds or kg
+          example: 135
+        superset_group:
+          type: string
+          description: Optional superset grouping identifier (e.g., "A", "B")
+          example: "A"
+        notes:
+          type: string
+          description: Optional notes or modifications for this exercise
+          example: "Pause for 2 seconds at bottom"
+
+    WorkoutDays:
+      type: object
+      description: |
+        REQUIRED parameter for create_workout.
+        A mapping of day names to exercise arrays.
+        Each key is a day name: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
+        Each value is an array of Exercise objects (each must have exercise, sets, reps, weight).
+        Example: {"monday": [{exercise: "Bench Press", sets: 3, reps: 10, weight: 135}], "wednesday": [{...}]}
+        Cannot be null, empty, or omitted.
       properties: {}
       additionalProperties:
         type: array
+        description: Array of exercises for this day
+        minItems: 1
         items:
-          type: object
-          properties:
-            exercise:
-              type: string
-            sets:
-              type: integer
-            reps:
-              type: integer
-            weight:
-              type: integer
-            superset_group:
-              type: string
-            notes:
-              type: string
+          $ref: '#/components/schemas/Exercise'
+      minProperties: 1
+      example:
+        monday:
+          - exercise: "Bench Press"
+            sets: 3
+            reps: 10
+            weight: 135
+            superset_group: "A"
+          - exercise: "Incline Dumbbell Press"
+            sets: 3
+            reps: 12
+            weight: 60
+            superset_group: "A"
+        wednesday:
+          - exercise: "Squats"
+            sets: 4
+            reps: 8
+            weight: 225
+        friday:
+          - exercise: "Deadlifts"
+            sets: 3
+            reps: 5
+            weight: 315
+
+    WorkoutDay:
+      type: object
+      description: |
+        A day's workout schedule mapped by day name to exercise arrays.
+        Keys should be day names (e.g., "monday", "tuesday", "wednesday").
+        Values are arrays of exercises to perform that day.
+      properties: {}
+      additionalProperties:
+        type: array
+        description: Array of exercises for this day
+        items:
+          $ref: '#/components/schemas/Exercise'
 
     SessionEntry:
       type: object

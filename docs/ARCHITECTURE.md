@@ -424,18 +424,129 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 **Authentication**:
 ```yaml
 security:
-  - apiKey: []
+  - apiKeyAuth: []
 
 securitySchemes:
-  apiKey:
+  apiKeyAuth:
     type: apiKey
     in: header
     name: apikey
 ```
 
 **Key Headers**:
-- `apikey`: Your Supabase anon key
+- `apikey`: Your Supabase anon key or service role key
 - `Prefer: return=representation` (for POST/PATCH operations)
+
+### API Key Authentication Strategy
+
+#### Why `apiKey` Type (Not Bearer)
+
+Supabase PostREST supports two authentication mechanisms:
+
+**1. Custom API Key (Our Choice)**
+```
+Header: apikey: <custom-key>
+Type in OpenAPI: apiKey
+Location: header
+Name: apikey
+```
+
+**2. JWT Bearer Token (Alternative)**
+```
+Header: Authorization: Bearer <jwt-token>
+Type in OpenAPI: http scheme: bearer
+Use Case: User sessions, time-limited access
+```
+
+**We use `apiKey` because**:
+- ChatGPT requires a persistent, always-valid credential
+- Service role keys in Supabase are API keys, not time-limited JWTs
+- The exact header name `apikey` matches Supabase PostREST expectations
+- No Bearer prefix needed—the key is sent raw
+
+#### How ChatGPT Reads Your OpenAPI Spec
+
+When you configure your Custom GPT with this OpenAPI spec, ChatGPT interprets:
+
+```yaml
+securitySchemes:
+  apiKeyAuth:
+    type: apiKey        # "Use an API key for auth"
+    in: header          # "Put it in HTTP headers"
+    name: apikey        # "Use header name 'apikey'"
+```
+
+**Result**: ChatGPT automatically adds to every request:
+```
+POST /rpc/create_session
+apikey: your-service-role-key-here
+Content-Type: application/json
+```
+
+#### Service Role vs Anon Key
+
+| Aspect | Anon Key | Service Role Key |
+|--------|----------|------------------|
+| **Persistence** | Permanent | Permanent |
+| **Privileges** | Limited (RLS enforces) | Elevated (bypasses RLS) |
+| **GPT Use Case** | Read-only public data | Full CRUD with RLS validation |
+| **Rotation** | Less critical | Rotate regularly |
+| **In OpenAPI Spec** | Safe to expose | ⚠️ Keep private |
+
+**For this Workout Tracker**:
+- Currently using **service role key** (no user authentication)
+- OpenAPI spec is shared with ChatGPT (treat as semi-public)
+- All RPC functions rely on RLS policies to enforce access control
+- When migrating to multi-user: switch to anon key + user-aware RLS policies
+
+#### Security Headers in Requests
+
+Every API call includes authentication via the `apikey` header:
+
+```bash
+# Example: Create workout
+curl -X POST https://xcydnrhqidokisawwhzc.supabase.co/rest/v1/rpc/create_workout \
+  -H "apikey: eyJ0eXAiOiJKV1QiLCJhbGc..." \
+  -H "Content-Type: application/json" \
+  -d '{"workout_name":"Push Day"}'
+```
+
+**Flow**:
+1. ChatGPT reads OpenAPI spec → learns header name is `apikey`
+2. You provide the API key when configuring Custom GPT
+3. ChatGPT automatically injects header on every request
+4. Supabase PostREST validates the key before processing
+
+#### Comparison with Bearer Pattern
+
+```yaml
+# Bearer Token (for user JWTs)
+securitySchemes:
+  bearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
+
+# Resulting header:
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGc...
+
+---
+
+# API Key (what we use for GPT)
+securitySchemes:
+  apiKeyAuth:
+    type: apiKey
+    in: header
+    name: apikey
+
+# Resulting header:
+apikey: eyJ0eXAiOiJKV1QiLCJhbGc...
+```
+
+**Key Difference**:
+- Bearer adds a prefix ("Bearer ") and uses standard `Authorization` header
+- API Key uses the exact header name you specify (`apikey`)
+- Supabase PostREST expects the `apikey` header, not Bearer format
 
 ### GPT Intent Mapping
 
