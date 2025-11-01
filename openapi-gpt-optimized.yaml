@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Workout Tracker GPT API
-  version: 14.0.0
+  version: 16.0.0
   description: |
     Comprehensive workout tracking API optimized for ChatGPT integration.
 
@@ -129,8 +129,8 @@ paths:
   /rpc/get_active_workout:
     post:
       operationId: getActiveWorkout
-      summary: Get the currently active workout
-      description: Returns the currently active workout with all details including exercises for each day.
+      summary: Get the currently active workout with current day
+      description: Returns active workout with all days and current day of week (Eastern Time). Use get_todays_workout for simpler single-call solution to get only today's exercises.
       tags:
         - Workouts
       requestBody:
@@ -142,23 +142,42 @@ paths:
               properties: {}
       responses:
         '200':
-          description: Active workout details
+          description: Active workout details with current day of the week
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  id:
-                    type: string
-                    format: uuid
-                  name:
-                    type: string
-                  description:
-                    type: string
-                  days:
-                    $ref: '#/components/schemas/WorkoutDay'
-                  is_active:
+                  success:
                     type: boolean
+                    description: Whether the request was successful
+                  workout:
+                    type: object
+                    description: The active workout details
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      description:
+                        type: string
+                      days:
+                        $ref: '#/components/schemas/WorkoutDay'
+                      is_active:
+                        type: boolean
+                  current_day:
+                    type: string
+                    description: Current day of the week in lowercase (e.g., "monday", "tuesday", "wednesday")
+                    example: "monday"
+                    enum:
+                      - monday
+                      - tuesday
+                      - wednesday
+                      - thursday
+                      - friday
+                      - saturday
+                      - sunday
       
   /rpc/set_active_workout:
     post:
@@ -244,7 +263,70 @@ paths:
                           type: string
                         notes:
                           type: string
-      
+
+  /rpc/get_todays_workout:
+    post:
+      operationId: getTodaysWorkout
+      summary: Get today's workout (convenience function)
+      description: RECOMMENDED for "What's my workout today?" Returns only today's exercises using Eastern Time day detection. Single-call alternative to get_active_workout + get_workout_for_day.
+      tags:
+        - Workouts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: Today's workout exercises
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the request was successful
+                  workout_id:
+                    type: string
+                    format: uuid
+                    description: ID of the active workout
+                  workout_name:
+                    type: string
+                    description: Name of the active workout
+                  day:
+                    type: string
+                    description: Current day of the week (Eastern Time)
+                    example: "friday"
+                  exercises:
+                    type: array
+                    description: Array of exercises for today
+                    items:
+                      type: object
+                      properties:
+                        exercise:
+                          type: string
+                          example: "Bench Press"
+                        sets:
+                          type: integer
+                          example: 3
+                        reps:
+                          type: integer
+                          example: 10
+                        weight:
+                          type: integer
+                          example: 135
+                        superset_group:
+                          type: string
+                          example: "A"
+                        notes:
+                          type: string
+                  message:
+                    type: string
+                    description: Message if no exercises found for today
+
   # Exercise Management
   /rpc/add_exercise_to_day:
     post:
