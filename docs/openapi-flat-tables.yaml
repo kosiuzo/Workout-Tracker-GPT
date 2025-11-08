@@ -1,0 +1,1353 @@
+openapi: 3.1.0
+info:
+  title: Workout Tracker GPT - Flat Tables API
+  description: |
+    API for the Workout Tracker GPT system using flattened table structures for easier querying and logging.
+
+    ## API Strategy Guide
+
+    This API provides two approaches for working with workout data:
+
+    ### Direct Table Access (GET requests)
+    **Use for:** Reading data with flexible filtering, sorting, and pagination
+    - **workouts_flat** - Query workout plans, exercises, and templates
+    - **sessions_flat** - Query logged sets, analyze performance, view history
+
+    **Advantages:**
+    - Powerful filtering via URL query parameters
+    - Column selection (only fetch what you need)
+    - Built-in pagination and sorting
+    - Great for analytics and reporting
+
+    ### RPC Functions (POST to /rpc/function_name)
+    **Use for:** Creating, updating, or complex operations
+    - Session management (start, complete)
+    - Set logging (create, update, delete)
+    - Convenience functions (today's workout, today's session)
+    - Operations requiring validation or business logic
+
+    **Advantages:**
+    - Input validation and error handling
+    - Multi-step operations in single call
+    - Consistent JSON response format
+    - Maintains data integrity
+
+    ## Quick Start Examples
+
+    ```bash
+    # Get today's workout (RPC - convenience)
+    curl -X POST https://your-project.supabase.co/rest/v1/rpc/get_todays_exercises_flat
+
+    # Query all Monday exercises (Direct - flexible)
+    curl "https://your-project.supabase.co/rest/v1/workouts_flat?day_name=eq.monday&workout_is_active=eq.true&order=exercise_order"
+
+    # Start a workout session (RPC - business logic)
+    curl -X POST https://your-project.supabase.co/rest/v1/rpc/start_session
+
+    # Log a set (RPC - validation)
+    curl -X POST https://your-project.supabase.co/rest/v1/rpc/log_set \
+      -H "Content-Type: application/json" \
+      -d '{"session_uuid":"...","exercise_name_param":"Bench Press","set_number_param":1,"reps_param":10,"weight_param":185}'
+
+    # Query all sets from a session (Direct - flexible)
+    curl "https://your-project.supabase.co/rest/v1/sessions_flat?session_id=eq.xxx&order=exercise_name,set_number"
+
+    # Get exercise history (Direct - powerful filtering)
+    curl "https://your-project.supabase.co/rest/v1/sessions_flat?exercise_name=eq.Bench+Press&session_date=gte.2025-01-01&order=session_date.desc,set_number"
+    ```
+
+  version: 2.0.0
+  contact:
+    name: Workout Tracker GPT Support
+    url: https://github.com/yourusername/workout-tracker-gpt
+
+servers:
+  - url: https://{project-id}.supabase.co/rest/v1
+    description: Supabase REST API
+    variables:
+      project-id:
+        default: your-project-id
+        description: Your Supabase project ID
+
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: apikey
+      description: Supabase anon/service role key
+
+  schemas:
+    WorkoutFlat:
+      type: object
+      description: Single exercise from a workout plan (denormalized)
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique ID for this flat row
+        workout_id:
+          type: string
+          format: uuid
+          description: Reference to parent workout
+        workout_name:
+          type: string
+          description: Denormalized workout name
+        workout_description:
+          type: string
+          nullable: true
+          description: Denormalized workout description
+        workout_is_active:
+          type: boolean
+          description: Whether this workout is currently active
+        day_name:
+          type: string
+          description: Day of the week (lowercase)
+          enum: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+        exercise_order:
+          type: integer
+          description: Zero-indexed position in the day's exercise list
+        exercise_name:
+          type: string
+          description: Name of the exercise
+        sets:
+          type: integer
+          nullable: true
+          description: Target number of sets
+        reps:
+          type: integer
+          nullable: true
+          description: Target number of reps
+        weight:
+          type: integer
+          nullable: true
+          description: Target weight
+        superset_group:
+          type: string
+          nullable: true
+          description: Superset grouping identifier (e.g., "A", "B")
+        exercise_notes:
+          type: string
+          nullable: true
+          description: Exercise-specific notes
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SessionFlat:
+      type: object
+      description: Single set from a workout session (denormalized)
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique ID for this set
+        session_id:
+          type: string
+          format: uuid
+          description: Reference to parent session
+        workout_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Denormalized workout reference
+        session_date:
+          type: string
+          format: date
+          description: Date of the session
+        session_notes:
+          type: string
+          nullable: true
+          description: Denormalized session notes
+        exercise_name:
+          type: string
+          description: Name of the exercise performed
+        set_number:
+          type: integer
+          description: Set number (1, 2, 3, etc.)
+        reps:
+          type: integer
+          description: Number of reps performed
+        weight:
+          type: number
+          format: decimal
+          description: Weight used (supports decimals)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RPCResponse:
+      type: object
+      description: Standard RPC function response
+      properties:
+        success:
+          type: boolean
+          description: Whether the operation succeeded
+        message:
+          type: string
+          description: Human-readable message
+          nullable: true
+        error:
+          type: string
+          description: Error message if success is false
+          nullable: true
+
+    ExerciseInfo:
+      type: object
+      properties:
+        exercise_order:
+          type: integer
+        exercise_name:
+          type: string
+        sets:
+          type: integer
+          nullable: true
+        reps:
+          type: integer
+          nullable: true
+        weight:
+          type: integer
+          nullable: true
+        superset_group:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    SetInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        set_number:
+          type: integer
+        reps:
+          type: integer
+        weight:
+          type: number
+
+security:
+  - apiKey: []
+
+paths:
+  # ============================================================
+  # WORKOUTS_FLAT - Direct Table Access
+  # ============================================================
+
+  /workouts_flat:
+    get:
+      summary: Query workout exercises (flat table)
+      description: |
+        **Recommended for:** Reading workout plans with flexible filtering
+
+        Query the flattened workouts table. Each row represents one exercise from a workout plan.
+
+        ## Common Query Patterns
+
+        **Get active workout exercises for a specific day:**
+        ```
+        ?workout_is_active=eq.true&day_name=eq.monday&order=exercise_order
+        ```
+
+        **Get all exercises for a workout:**
+        ```
+        ?workout_id=eq.{uuid}&order=day_name,exercise_order
+        ```
+
+        **Find all workouts containing an exercise:**
+        ```
+        ?exercise_name=eq.Bench+Press&select=workout_id,workout_name,day_name
+        ```
+
+        **Get exercises in a superset:**
+        ```
+        ?workout_id=eq.{uuid}&day_name=eq.monday&superset_group=eq.A&order=exercise_order
+        ```
+
+      tags:
+        - Workouts (Direct Access)
+      parameters:
+        - name: workout_id
+          in: query
+          description: Filter by workout ID
+          schema:
+            type: string
+            format: uuid
+        - name: workout_is_active
+          in: query
+          description: Filter by active status (eq.true or eq.false)
+          schema:
+            type: string
+        - name: day_name
+          in: query
+          description: Filter by day (eq.monday, eq.tuesday, etc.)
+          schema:
+            type: string
+        - name: exercise_name
+          in: query
+          description: Filter by exercise name (supports eq, ilike, etc.)
+          schema:
+            type: string
+        - name: superset_group
+          in: query
+          description: Filter by superset group
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: Sort order (e.g., exercise_order, day_name.asc)
+          schema:
+            type: string
+        - name: select
+          in: query
+          description: Columns to return (e.g., exercise_name,sets,reps,weight)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of rows to return
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: Number of rows to skip (pagination)
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Array of workout exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkoutFlat'
+              examples:
+                todaysWorkout:
+                  summary: Get today's workout (Monday)
+                  value:
+                    - id: "abc123..."
+                      workout_id: "workout-uuid"
+                      workout_name: "Push/Pull/Legs v1"
+                      workout_is_active: true
+                      day_name: "monday"
+                      exercise_order: 0
+                      exercise_name: "Bench Press"
+                      sets: 4
+                      reps: 8
+                      weight: 185
+                      superset_group: null
+                      exercise_notes: "Barbell, touch chest each rep"
+                    - id: "def456..."
+                      workout_id: "workout-uuid"
+                      workout_name: "Push/Pull/Legs v1"
+                      workout_is_active: true
+                      day_name: "monday"
+                      exercise_order: 1
+                      exercise_name: "Incline Dumbbell Press"
+                      sets: 3
+                      reps: 10
+                      weight: 60
+                      superset_group: null
+                      exercise_notes: "45-degree angle"
+
+  # ============================================================
+  # SESSIONS_FLAT - Direct Table Access
+  # ============================================================
+
+  /sessions_flat:
+    get:
+      summary: Query workout sets (flat table)
+      description: |
+        **Recommended for:** Reading session data, analyzing performance, viewing history
+
+        Query the flattened sessions table. Each row represents one set from a workout session.
+
+        ## Common Query Patterns
+
+        **Get all sets from a session:**
+        ```
+        ?session_id=eq.{uuid}&order=exercise_name,set_number
+        ```
+
+        **Get exercise history for last 30 days:**
+        ```
+        ?exercise_name=eq.Bench+Press&session_date=gte.2025-01-01&order=session_date.desc,set_number
+        ```
+
+        **Get today's logged sets:**
+        ```
+        ?session_date=eq.2025-01-06&order=created_at
+        ```
+
+        **Calculate exercise volume:**
+        ```
+        ?exercise_name=eq.Squat&session_date=gte.2025-01-01&select=session_date,reps,weight
+        ```
+
+        **Find personal records:**
+        ```
+        ?exercise_name=eq.Bench+Press&order=weight.desc&limit=1
+        ```
+
+      tags:
+        - Sessions (Direct Access)
+      parameters:
+        - name: session_id
+          in: query
+          description: Filter by session ID
+          schema:
+            type: string
+            format: uuid
+        - name: workout_id
+          in: query
+          description: Filter by workout ID
+          schema:
+            type: string
+            format: uuid
+        - name: session_date
+          in: query
+          description: Filter by date (eq, gte, lte, etc.)
+          schema:
+            type: string
+        - name: exercise_name
+          in: query
+          description: Filter by exercise name
+          schema:
+            type: string
+        - name: set_number
+          in: query
+          description: Filter by set number
+          schema:
+            type: integer
+        - name: order
+          in: query
+          description: Sort order
+          schema:
+            type: string
+        - name: select
+          in: query
+          description: Columns to return
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of rows
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: Pagination offset
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Array of workout sets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionFlat'
+              examples:
+                sessionSets:
+                  summary: All sets from a session
+                  value:
+                    - id: "set1-uuid"
+                      session_id: "session-uuid"
+                      workout_id: "workout-uuid"
+                      session_date: "2025-01-06"
+                      exercise_name: "Bench Press"
+                      set_number: 1
+                      reps: 10
+                      weight: 185
+                      session_notes: "Great workout"
+                    - id: "set2-uuid"
+                      session_id: "session-uuid"
+                      workout_id: "workout-uuid"
+                      session_date: "2025-01-06"
+                      exercise_name: "Bench Press"
+                      set_number: 2
+                      reps: 9
+                      weight: 185
+                      session_notes: "Great workout"
+
+  # ============================================================
+  # RPC FUNCTIONS - Workout Queries
+  # ============================================================
+
+  /rpc/get_todays_exercises_flat:
+    post:
+      summary: Get today's workout exercises
+      description: |
+        **Recommended for:** Quick access to today's workout without knowing the day name
+
+        Convenience function that automatically determines the current day and returns
+        exercises from the active workout. Uses Eastern Time timezone.
+
+        **When to use this vs direct GET:**
+        - Use this for simple "what should I do today?" queries
+        - Use direct GET when you need custom filtering or want a different day
+
+      tags:
+        - Workouts (RPC Functions)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: Today's exercises or error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      workout_id:
+                        type: string
+                        format: uuid
+                      workout_name:
+                        type: string
+                      current_day:
+                        type: string
+                      exercises:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExerciseInfo'
+              examples:
+                success:
+                  value:
+                    success: true
+                    workout_id: "workout-uuid"
+                    workout_name: "Push/Pull/Legs v1"
+                    current_day: "monday"
+                    exercises:
+                      - exercise_order: 0
+                        exercise_name: "Bench Press"
+                        sets: 4
+                        reps: 8
+                        weight: 185
+                        superset_group: null
+                        notes: "Barbell, touch chest each rep"
+
+  /rpc/get_exercises_for_day_flat:
+    post:
+      summary: Get exercises for a specific day
+      description: |
+        **Recommended for:** Planning ahead or viewing non-current days
+
+        Returns exercises for a specific day from workouts_flat table.
+
+        **When to use this vs direct GET:**
+        - Use this when you want the standard format and don't need custom filtering
+        - Use direct GET when you need more complex queries or different sorting
+
+      tags:
+        - Workouts (RPC Functions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - day_name_param
+              properties:
+                day_name_param:
+                  type: string
+                  description: Day of the week
+                  enum: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+                workout_uuid:
+                  type: string
+                  format: uuid
+                  description: Specific workout ID (defaults to active)
+            examples:
+              wednesday:
+                value:
+                  day_name_param: "wednesday"
+      responses:
+        '200':
+          description: Exercises for the specified day
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      workout_id:
+                        type: string
+                        format: uuid
+                      workout_name:
+                        type: string
+                      day:
+                        type: string
+                      exercises:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExerciseInfo'
+
+  # ============================================================
+  # RPC FUNCTIONS - Session Management
+  # ============================================================
+
+  /rpc/start_session:
+    post:
+      summary: Start a new workout session
+      description: |
+        **Recommended for:** Creating new workout sessions
+
+        Creates a new workout session. Prevents duplicate sessions for the same workout and date.
+
+        **Why use this instead of direct POST to sessions table:**
+        - Automatically uses active workout
+        - Prevents duplicate sessions
+        - Initializes empty entries array
+        - Returns consistent error messages
+        - Validates workout exists
+
+      tags:
+        - Sessions (RPC Functions)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date_param:
+                  type: string
+                  format: date
+                  description: Session date (defaults to today)
+                workout_uuid:
+                  type: string
+                  format: uuid
+                  description: Workout ID (defaults to active workout)
+                session_notes_param:
+                  type: string
+                  description: Optional session notes
+            examples:
+              today:
+                summary: Start today's session
+                value: {}
+              withNotes:
+                summary: Start with notes
+                value:
+                  session_notes_param: "Morning workout"
+              specificDate:
+                summary: Start session for specific date
+                value:
+                  date_param: "2025-01-07"
+      responses:
+        '200':
+          description: Session created or error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      session_id:
+                        type: string
+                        format: uuid
+                      workout_id:
+                        type: string
+                        format: uuid
+                      workout_name:
+                        type: string
+                      date:
+                        type: string
+                        format: date
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "Session started successfully"
+                    session_id: "new-session-uuid"
+                    workout_id: "workout-uuid"
+                    workout_name: "Push/Pull/Legs v1"
+                    date: "2025-01-06"
+                duplicate:
+                  value:
+                    success: false
+                    message: "Session already exists for this date"
+                    session_id: "existing-session-uuid"
+                    date: "2025-01-06"
+
+  /rpc/get_todays_session:
+    post:
+      summary: Get today's workout session
+      description: |
+        **Recommended for:** Checking current progress during a workout
+
+        Returns today's session from the active workout with all logged sets.
+
+        **When to use this vs direct GET on sessions_flat:**
+        - Use this for quick "where am I at?" queries
+        - Use direct GET when you need custom filtering or aggregations
+
+      tags:
+        - Sessions (RPC Functions)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: Today's session or error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      session_id:
+                        type: string
+                        format: uuid
+                      workout_id:
+                        type: string
+                        format: uuid
+                      workout_name:
+                        type: string
+                      date:
+                        type: string
+                        format: date
+                      notes:
+                        type: string
+                      sets:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SetInfo'
+
+  /rpc/get_session_sets_flat:
+    post:
+      summary: Get all sets from a specific session
+      description: |
+        **Recommended for:** Reviewing a completed session
+
+        Returns all sets for a session using the flat table.
+
+        **When to use this vs direct GET on sessions_flat:**
+        - Use this when you want the standard format with session metadata
+        - Use direct GET when you need custom filtering, grouping, or aggregations
+
+      tags:
+        - Sessions (RPC Functions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_uuid
+              properties:
+                session_uuid:
+                  type: string
+                  format: uuid
+                  description: Session ID
+      responses:
+        '200':
+          description: Session sets or error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      session_id:
+                        type: string
+                        format: uuid
+                      workout_id:
+                        type: string
+                        format: uuid
+                      workout_name:
+                        type: string
+                      date:
+                        type: string
+                        format: date
+                      notes:
+                        type: string
+                      sets:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SetInfo'
+
+  /rpc/complete_session:
+    post:
+      summary: Mark session as complete and calculate history
+      description: |
+        **Recommended for:** Finishing a workout session
+
+        Marks a session as complete, optionally updates notes, and triggers history calculation.
+
+        **Why use this instead of direct PATCH:**
+        - Automatically calculates exercise and workout history
+        - Ensures history tables are updated
+        - Single atomic operation
+        - Consistent with workout completion workflow
+
+      tags:
+        - Sessions (RPC Functions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_uuid
+              properties:
+                session_uuid:
+                  type: string
+                  format: uuid
+                  description: Session ID
+                final_notes:
+                  type: string
+                  description: Final session notes
+            examples:
+              withNotes:
+                value:
+                  session_uuid: "session-uuid"
+                  final_notes: "Great workout, felt strong on bench!"
+      responses:
+        '200':
+          description: Session completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      session_id:
+                        type: string
+                        format: uuid
+                      date:
+                        type: string
+                        format: date
+                      history_result:
+                        type: object
+
+  # ============================================================
+  # RPC FUNCTIONS - Set Logging
+  # ============================================================
+
+  /rpc/log_set:
+    post:
+      summary: Log a single set
+      description: |
+        **REQUIRED for:** Logging workout sets
+
+        Logs a single set to a session. If a set with the same exercise and set number
+        exists, it will be replaced.
+
+        **Why use this instead of direct POST to sessions_flat:**
+        - sessions_flat is auto-generated from sessions table (read-only from API perspective)
+        - This function properly updates the JSONB array in sessions table
+        - Validates all inputs
+        - Prevents data corruption
+        - Handles duplicates correctly
+
+        **This is the PRIMARY way to log sets. Direct table manipulation is not recommended.**
+
+      tags:
+        - Set Logging (RPC Functions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_uuid
+                - exercise_name_param
+                - set_number_param
+                - reps_param
+                - weight_param
+              properties:
+                session_uuid:
+                  type: string
+                  format: uuid
+                  description: Session ID
+                exercise_name_param:
+                  type: string
+                  description: Exercise name
+                set_number_param:
+                  type: integer
+                  minimum: 1
+                  description: Set number (1, 2, 3, etc.)
+                reps_param:
+                  type: integer
+                  minimum: 0
+                  description: Number of reps performed
+                weight_param:
+                  type: number
+                  minimum: 0
+                  description: Weight used
+            examples:
+              firstSet:
+                summary: Log first set of bench press
+                value:
+                  session_uuid: "session-uuid"
+                  exercise_name_param: "Bench Press"
+                  set_number_param: 1
+                  reps_param: 10
+                  weight_param: 185
+      responses:
+        '200':
+          description: Set logged or error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      session_id:
+                        type: string
+                        format: uuid
+                      exercise:
+                        type: string
+                      set:
+                        type: integer
+                      reps:
+                        type: integer
+                      weight:
+                        type: number
+
+  /rpc/log_multiple_sets:
+    post:
+      summary: Log multiple sets at once
+      description: |
+        **REQUIRED for:** Batch logging multiple sets
+
+        Logs multiple sets in a single API call for efficiency.
+
+        **Why use this:**
+        - More efficient than multiple log_set calls
+        - Single transaction
+        - Validates all sets before logging
+        - Returns count of successful logs
+
+      tags:
+        - Set Logging (RPC Functions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_uuid
+                - sets_data
+              properties:
+                session_uuid:
+                  type: string
+                  format: uuid
+                  description: Session ID
+                sets_data:
+                  type: array
+                  description: Array of sets to log
+                  items:
+                    type: object
+                    required:
+                      - exercise
+                      - set
+                      - reps
+                      - weight
+                    properties:
+                      exercise:
+                        type: string
+                      set:
+                        type: integer
+                      reps:
+                        type: integer
+                      weight:
+                        type: number
+            examples:
+              multipleSets:
+                summary: Log 5 sets at once
+                value:
+                  session_uuid: "session-uuid"
+                  sets_data:
+                    - exercise: "Bench Press"
+                      set: 1
+                      reps: 10
+                      weight: 185
+                    - exercise: "Bench Press"
+                      set: 2
+                      reps: 9
+                      weight: 185
+                    - exercise: "Bench Press"
+                      set: 3
+                      reps: 8
+                      weight: 185
+                    - exercise: "Incline Press"
+                      set: 1
+                      reps: 10
+                      weight: 60
+                    - exercise: "Incline Press"
+                      set: 2
+                      reps: 10
+                      weight: 60
+      responses:
+        '200':
+          description: Sets logged
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      session_id:
+                        type: string
+                        format: uuid
+                      sets_logged:
+                        type: integer
+
+  /rpc/update_set:
+    post:
+      summary: Update an existing set
+      description: |
+        **REQUIRED for:** Modifying logged sets
+
+        Updates a specific set. Only provided parameters will be updated (partial updates).
+
+        **Why use this:**
+        - Safely updates JSONB array
+        - Supports partial updates (update only reps OR weight)
+        - Validates set exists
+        - Maintains data consistency
+
+      tags:
+        - Set Logging (RPC Functions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_uuid
+                - exercise_name_param
+                - set_number_param
+              properties:
+                session_uuid:
+                  type: string
+                  format: uuid
+                exercise_name_param:
+                  type: string
+                set_number_param:
+                  type: integer
+                reps_param:
+                  type: integer
+                  description: New reps (optional)
+                weight_param:
+                  type: number
+                  description: New weight (optional)
+            examples:
+              updateReps:
+                summary: Update only reps
+                value:
+                  session_uuid: "session-uuid"
+                  exercise_name_param: "Bench Press"
+                  set_number_param: 2
+                  reps_param: 10
+              updateBoth:
+                summary: Update reps and weight
+                value:
+                  session_uuid: "session-uuid"
+                  exercise_name_param: "Bench Press"
+                  set_number_param: 2
+                  reps_param: 12
+                  weight_param: 195
+      responses:
+        '200':
+          description: Set updated or error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      session_id:
+                        type: string
+                        format: uuid
+                      exercise:
+                        type: string
+                      set:
+                        type: integer
+
+  /rpc/delete_set:
+    post:
+      summary: Delete a set
+      description: |
+        **REQUIRED for:** Removing incorrect sets
+
+        Deletes a specific set from a session.
+
+        **Why use this:**
+        - Safely removes from JSONB array
+        - Validates set exists
+        - Maintains data consistency with sessions_flat
+
+      tags:
+        - Set Logging (RPC Functions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_uuid
+                - exercise_name_param
+                - set_number_param
+              properties:
+                session_uuid:
+                  type: string
+                  format: uuid
+                exercise_name_param:
+                  type: string
+                set_number_param:
+                  type: integer
+            examples:
+              deleteSet:
+                value:
+                  session_uuid: "session-uuid"
+                  exercise_name_param: "Bench Press"
+                  set_number_param: 5
+      responses:
+        '200':
+          description: Set deleted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      session_id:
+                        type: string
+                        format: uuid
+                      exercise:
+                        type: string
+                      set:
+                        type: integer
+
+  # ============================================================
+  # RPC FUNCTIONS - History & Analytics
+  # ============================================================
+
+  /rpc/get_exercise_history_flat:
+    post:
+      summary: Get detailed exercise progression
+      description: |
+        **Recommended for:** Analyzing exercise progression over time
+
+        Returns detailed history and summary statistics for a specific exercise.
+
+        **When to use this vs direct GET on sessions_flat:**
+        - Use this when you want both detailed history AND summary stats
+        - Use direct GET when you need custom aggregations or specific filtering
+
+      tags:
+        - History & Analytics (RPC Functions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - exercise_name_param
+              properties:
+                exercise_name_param:
+                  type: string
+                  description: Exercise name
+                days_back:
+                  type: integer
+                  default: 30
+                  description: Days to look back
+                workout_uuid:
+                  type: string
+                  format: uuid
+                  description: Filter by specific workout
+            examples:
+              last30Days:
+                summary: Last 30 days of bench press
+                value:
+                  exercise_name_param: "Bench Press"
+              last90Days:
+                summary: Last 90 days of squats
+                value:
+                  exercise_name_param: "Squat"
+                  days_back: 90
+      responses:
+        '200':
+          description: Exercise history with summary
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      exercise:
+                        type: string
+                      days_back:
+                        type: integer
+                      detailed_history:
+                        type: array
+                        description: Every set logged for this exercise
+                        items:
+                          type: object
+                          properties:
+                            date:
+                              type: string
+                              format: date
+                            set_number:
+                              type: integer
+                            reps:
+                              type: integer
+                            weight:
+                              type: number
+                            volume:
+                              type: number
+                      summary:
+                        type: array
+                        description: Daily aggregated stats
+                        items:
+                          type: object
+                          properties:
+                            date:
+                              type: string
+                              format: date
+                            total_sets:
+                              type: integer
+                            total_reps:
+                              type: integer
+                            total_volume:
+                              type: number
+                            max_weight:
+                              type: number
+                            avg_weight:
+                              type: number
+
+  /rpc/get_workout_summary_flat:
+    post:
+      summary: Get session summary by exercise
+      description: |
+        **Recommended for:** Post-workout summaries and volume tracking
+
+        Returns summary statistics for a session grouped by exercise.
+
+        **When to use this vs direct GET with grouping:**
+        - Use this for standard summary format
+        - Use direct GET when you need custom groupings or calculations
+
+      tags:
+        - History & Analytics (RPC Functions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_uuid
+              properties:
+                session_uuid:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Session summary
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RPCResponse'
+                  - type: object
+                    properties:
+                      session_id:
+                        type: string
+                        format: uuid
+                      workout_id:
+                        type: string
+                        format: uuid
+                      workout_name:
+                        type: string
+                      date:
+                        type: string
+                        format: date
+                      notes:
+                        type: string
+                      summary:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            exercise_name:
+                              type: string
+                            total_sets:
+                              type: integer
+                            total_reps:
+                              type: integer
+                            total_volume:
+                              type: number
+                            max_weight:
+                              type: number
+                            avg_weight:
+                              type: number
+
+tags:
+  - name: Workouts (Direct Access)
+    description: |
+      Direct table access for reading workout plans. Use GET requests with powerful
+      PostgREST query parameters for flexible filtering, sorting, and pagination.
+
+  - name: Workouts (RPC Functions)
+    description: |
+      Convenience functions for common workout queries. Simpler than direct access
+      but less flexible.
+
+  - name: Sessions (Direct Access)
+    description: |
+      Direct table access for reading session data and analyzing performance.
+      Use GET requests for flexible queries and analytics.
+
+  - name: Sessions (RPC Functions)
+    description: |
+      Functions for session lifecycle management (start, complete, query).
+
+  - name: Set Logging (RPC Functions)
+    description: |
+      **REQUIRED** for logging, updating, and deleting sets. Direct table manipulation
+      is not recommended as sessions_flat is auto-generated from sessions table.
+
+  - name: History & Analytics (RPC Functions)
+    description: |
+      Functions for analyzing progression and performance. Can also use direct
+      table access with custom aggregations.
