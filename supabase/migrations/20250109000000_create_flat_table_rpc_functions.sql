@@ -558,20 +558,29 @@ begin
   -- Get summary statistics by date
   select json_agg(
     json_build_object(
-      'date', session_date,
-      'total_sets', count(*),
-      'total_reps', sum(reps),
-      'total_volume', sum(reps * weight),
-      'max_weight', max(weight),
-      'avg_weight', round(avg(weight)::numeric, 2)
-    ) order by session_date desc
+      'date', summary_data.session_date,
+      'total_sets', summary_data.total_sets,
+      'total_reps', summary_data.total_reps,
+      'total_volume', summary_data.total_volume,
+      'max_weight', summary_data.max_weight,
+      'avg_weight', summary_data.avg_weight
+    ) order by summary_data.session_date desc
   )
   into v_summary
-  from sessions_flat
-  where exercise_name = exercise_name_param
-    and session_date >= current_date - days_back
-    and (workout_name_param is null or workout_name = workout_name_param)
-  group by session_date;
+  from (
+    select
+      session_date,
+      count(*) as total_sets,
+      sum(reps) as total_reps,
+      sum(reps * weight) as total_volume,
+      max(weight) as max_weight,
+      round(avg(weight)::numeric, 2) as avg_weight
+    from sessions_flat
+    where exercise_name = exercise_name_param
+      and session_date >= current_date - days_back
+      and (workout_name_param is null or workout_name = workout_name_param)
+    group by session_date
+  ) summary_data;
 
   return json_build_object(
     'success', true,
