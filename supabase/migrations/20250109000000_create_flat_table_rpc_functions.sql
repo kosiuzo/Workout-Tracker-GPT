@@ -15,20 +15,19 @@ create or replace function get_todays_exercises_flat()
 returns json as $$
 declare
   v_current_day text;
-  v_workout_id uuid;
   v_workout_name text;
   v_exercises json;
 begin
   -- Get the current day of the week in lowercase using Eastern Time
   v_current_day := lower(trim(to_char(current_timestamp at time zone 'America/New_York', 'Day')));
 
-  -- Get active workout
-  select id, workout_name into v_workout_id, v_workout_name
+  -- Get active workout name
+  select workout_name into v_workout_name
   from workouts_flat
   where workout_is_active = true
   limit 1;
 
-  if v_workout_id is null then
+  if v_workout_name is null then
     return json_build_object(
       'success', false,
       'message', 'No active workout found',
@@ -45,18 +44,18 @@ begin
       'reps', reps,
       'weight', weight,
       'superset_group', superset_group,
-      'notes', exercise_notes
+      'notes', exercise_notes,
+      'day_notes', day_notes
     ) order by exercise_order
   )
   into v_exercises
   from workouts_flat
-  where workout_id = v_workout_id
+  where workout_name = v_workout_name
     and day_name = v_current_day;
 
   if v_exercises is null then
     return json_build_object(
       'success', false,
-      'workout_id', v_workout_id,
       'workout_name', v_workout_name,
       'current_day', v_current_day,
       'message', format('No exercises scheduled for %s', v_current_day)
@@ -65,7 +64,6 @@ begin
 
   return json_build_object(
     'success', true,
-    'workout_id', v_workout_id,
     'workout_name', v_workout_name,
     'current_day', v_current_day,
     'exercises', v_exercises
@@ -82,28 +80,27 @@ comment on function get_todays_exercises_flat is 'Returns today''s workout exerc
 
 create or replace function get_exercises_for_day_flat(
   day_name_param text,
-  workout_uuid uuid default null
+  workout_name_param text default null
 )
 returns json as $$
 declare
-  v_workout_id uuid;
   v_workout_name text;
   v_exercises json;
 begin
-  -- If no workout_id provided, use active workout
-  if workout_uuid is null then
-    select workout_id, workout_name into v_workout_id, v_workout_name
+  -- If no workout_name provided, use active workout
+  if workout_name_param is null then
+    select workout_name into v_workout_name
     from workouts_flat
     where workout_is_active = true
     limit 1;
   else
-    select workout_id, workout_name into v_workout_id, v_workout_name
+    select workout_name into v_workout_name
     from workouts_flat
-    where workout_id = workout_uuid
+    where workout_name = workout_name_param
     limit 1;
   end if;
 
-  if v_workout_id is null then
+  if v_workout_name is null then
     return json_build_object(
       'success', false,
       'message', 'Workout not found'
@@ -119,18 +116,18 @@ begin
       'reps', reps,
       'weight', weight,
       'superset_group', superset_group,
-      'notes', exercise_notes
+      'notes', exercise_notes,
+      'day_notes', day_notes
     ) order by exercise_order
   )
   into v_exercises
   from workouts_flat
-  where workout_id = v_workout_id
+  where workout_name = v_workout_name
     and day_name = lower(day_name_param);
 
   if v_exercises is null then
     return json_build_object(
       'success', false,
-      'workout_id', v_workout_id,
       'workout_name', v_workout_name,
       'day', day_name_param,
       'message', format('No exercises found for %s', day_name_param)
@@ -139,7 +136,6 @@ begin
 
   return json_build_object(
     'success', true,
-    'workout_id', v_workout_id,
     'workout_name', v_workout_name,
     'day', lower(day_name_param),
     'exercises', v_exercises
@@ -150,114 +146,24 @@ $$ language plpgsql security definer;
 comment on function get_exercises_for_day_flat is 'Returns exercises for a specific day from workouts_flat table';
 
 -- =====================================================
--- 3. START_SESSION
+-- 4. LOG_SET
 -- =====================================================
--- Create a new session for today or specified date
--- Optionally pre-populate with template exercises
+-- Log a single set to an existing session
+-- Directly inserts into sessions_flat table
 
-create or replace function start_session(
-  date_param date default current_date,
-  workout_uuid uuid default null,
+create or replace function log_set(
+  workout_name_param text,
+  session_date_param date,
+  exercise_name_param text,
+  set_number_param int,
+  reps_param int,
+  weight_param numeric,
   session_notes_param text default null
 )
 returns json as $$
 declare
-  v_workout_id uuid;
-  v_workout_name text;
-  v_session_id uuid;
-  v_existing_session_id uuid;
+  v_result record;
 begin
-  -- If no workout_id provided, use active workout
-  if workout_uuid is null then
-    select id into v_workout_id
-    from workouts
-    where is_active = true
-    limit 1;
-
-    if v_workout_id is null then
-      return json_build_object(
-        'success', false,
-        'message', 'No active workout found'
-      );
-    end if;
-  else
-    v_workout_id := workout_uuid;
-  end if;
-
-  -- Check if session already exists for this date
-  select id into v_existing_session_id
-  from sessions
-  where workout_id = v_workout_id
-    and date = date_param
-  limit 1;
-
-  if v_existing_session_id is not null then
-    return json_build_object(
-      'success', false,
-      'message', 'Session already exists for this date',
-      'session_id', v_existing_session_id,
-      'date', date_param
-    );
-  end if;
-
-  -- Get workout name
-  select name into v_workout_name
-  from workouts
-  where id = v_workout_id;
-
-  -- Create new session
-  insert into sessions (workout_id, date, entries, notes)
-  values (v_workout_id, date_param, '[]'::jsonb, session_notes_param)
-  returning id into v_session_id;
-
-  return json_build_object(
-    'success', true,
-    'message', 'Session started successfully',
-    'session_id', v_session_id,
-    'workout_id', v_workout_id,
-    'workout_name', v_workout_name,
-    'date', date_param
-  );
-end;
-$$ language plpgsql security definer;
-
-comment on function start_session is 'Creates a new workout session for a specific date';
-
--- =====================================================
--- 4. LOG_SET
--- =====================================================
--- Log a single set to an existing session
--- Uses flat table approach for easier data entry
-
-create or replace function log_set(
-  session_uuid uuid,
-  exercise_name_param text,
-  set_number_param int,
-  reps_param int,
-  weight_param numeric
-)
-returns json as $$
-declare
-  v_workout_id uuid;
-  v_session_date date;
-  v_session_notes text;
-  v_new_entry jsonb;
-  v_existing_entries jsonb;
-  v_updated_entries jsonb;
-begin
-  -- Validate session exists
-  select workout_id, date, notes into v_workout_id, v_session_date, v_session_notes
-  from sessions
-  where id = session_uuid;
-
-  if v_workout_id is null then
-    return json_build_object(
-      'success', false,
-      'message', 'Session not found',
-      'session_id', session_uuid
-    );
-  end if;
-
   -- Validate inputs
   if exercise_name_param is null or trim(exercise_name_param) = '' then
     return json_build_object(
@@ -287,53 +193,27 @@ begin
     );
   end if;
 
-  -- Create new entry
-  v_new_entry := json_build_object(
-    'exercise', exercise_name_param,
-    'set', set_number_param,
-    'reps', reps_param,
-    'weight', weight_param
-  )::jsonb;
-
-  -- Get existing entries
-  select entries into v_existing_entries from sessions where id = session_uuid;
-
-  -- Remove any existing entry with same exercise and set number
-  v_updated_entries := (
-    select jsonb_agg(entry)
-    from jsonb_array_elements(v_existing_entries) as entry
-    where not (
-      entry->>'exercise' = exercise_name_param
-      and (entry->>'set')::int = set_number_param
-    )
-  );
-
-  -- Handle case where all entries were removed
-  if v_updated_entries is null then
-    v_updated_entries := '[]'::jsonb;
-  end if;
-
-  -- Add new entry
-  v_updated_entries := v_updated_entries || v_new_entry;
-
-  -- Update session with new entries
-  update sessions
-  set entries = v_updated_entries
-  where id = session_uuid;
+  -- Insert or replace set in sessions_flat
+  insert into sessions_flat (workout_name, session_date, exercise_name, set_number, reps, weight, session_notes)
+  values (workout_name_param, session_date_param, exercise_name_param, set_number_param, reps_param, weight_param, session_notes_param)
+  on conflict (workout_name, session_date, exercise_name, set_number) do update
+  set reps = reps_param, weight = weight_param, session_notes = session_notes_param
+  returning * into v_result;
 
   return json_build_object(
     'success', true,
     'message', 'Set logged successfully',
-    'session_id', session_uuid,
-    'exercise', exercise_name_param,
-    'set', set_number_param,
-    'reps', reps_param,
-    'weight', weight_param
+    'workout_name', v_result.workout_name,
+    'session_date', v_result.session_date,
+    'exercise', v_result.exercise_name,
+    'set', v_result.set_number,
+    'reps', v_result.reps,
+    'weight', v_result.weight
   );
 end;
 $$ language plpgsql security definer;
 
-comment on function log_set is 'Logs a single set to a session. If a set with the same exercise and set number exists, it will be replaced.';
+comment on function log_set is 'Logs a single set to a session_flat. If a set with the same exercise and set number exists, it will be replaced.';
 
 -- =====================================================
 -- 5. LOG_MULTIPLE_SETS
@@ -341,29 +221,17 @@ comment on function log_set is 'Logs a single set to a session. If a set with th
 -- Log multiple sets at once for efficiency
 
 create or replace function log_multiple_sets(
-  session_uuid uuid,
-  sets_data jsonb
+  workout_name_param text,
+  session_date_param date,
+  sets_data jsonb,
+  session_notes_param text default null
 )
 returns json as $$
 declare
-  v_workout_id uuid;
   v_count int := 0;
   v_set_entry jsonb;
   v_result json;
 begin
-  -- Validate session exists
-  select workout_id into v_workout_id
-  from sessions
-  where id = session_uuid;
-
-  if v_workout_id is null then
-    return json_build_object(
-      'success', false,
-      'message', 'Session not found',
-      'session_id', session_uuid
-    );
-  end if;
-
   -- Validate sets_data is an array
   if jsonb_typeof(sets_data) != 'array' then
     return json_build_object(
@@ -376,11 +244,13 @@ begin
   for v_set_entry in select * from jsonb_array_elements(sets_data)
   loop
     select log_set(
-      session_uuid,
+      workout_name_param,
+      session_date_param,
       v_set_entry->>'exercise',
       (v_set_entry->>'set')::int,
       (v_set_entry->>'reps')::int,
-      (v_set_entry->>'weight')::numeric
+      (v_set_entry->>'weight')::numeric,
+      session_notes_param
     ) into v_result;
 
     if (v_result->>'success')::boolean then
@@ -391,7 +261,8 @@ begin
   return json_build_object(
     'success', true,
     'message', format('Logged %s sets successfully', v_count),
-    'session_id', session_uuid,
+    'workout_name', workout_name_param,
+    'session_date', session_date_param,
     'sets_logged', v_count
   );
 end;
@@ -405,37 +276,37 @@ comment on function log_multiple_sets is 'Logs multiple sets at once. Expects JS
 -- Get all sets from a session using the flat table
 
 create or replace function get_session_sets_flat(
-  session_uuid uuid
+  workout_name_param text,
+  session_date_param date
 )
 returns json as $$
 declare
-  v_session_info record;
   v_sets json;
+  v_session_notes text;
 begin
-  -- Get session info
-  select
-    s.id,
-    s.workout_id,
-    w.name as workout_name,
-    s.date,
-    s.notes
-  into v_session_info
-  from sessions s
-  join workouts w on w.id = s.workout_id
-  where s.id = session_uuid;
+  -- Get session notes
+  select session_notes into v_session_notes
+  from sessions_flat
+  where workout_name = workout_name_param
+    and session_date = session_date_param
+  limit 1;
 
-  if v_session_info.id is null then
+  if v_session_notes is null and not exists(
+    select 1 from sessions_flat
+    where workout_name = workout_name_param
+      and session_date = session_date_param
+  ) then
     return json_build_object(
       'success', false,
       'message', 'Session not found',
-      'session_id', session_uuid
+      'workout_name', workout_name_param,
+      'session_date', session_date_param
     );
   end if;
 
   -- Get sets from flat table
   select json_agg(
     json_build_object(
-      'id', id,
       'exercise_name', exercise_name,
       'set_number', set_number,
       'reps', reps,
@@ -444,15 +315,14 @@ begin
   )
   into v_sets
   from sessions_flat
-  where session_id = session_uuid;
+  where workout_name = workout_name_param
+    and session_date = session_date_param;
 
   return json_build_object(
     'success', true,
-    'session_id', v_session_info.id,
-    'workout_id', v_session_info.workout_id,
-    'workout_name', v_session_info.workout_name,
-    'date', v_session_info.date,
-    'notes', v_session_info.notes,
+    'workout_name', workout_name_param,
+    'session_date', session_date_param,
+    'session_notes', v_session_notes,
     'sets', coalesce(v_sets, '[]'::json)
   );
 end;
@@ -468,30 +338,28 @@ comment on function get_session_sets_flat is 'Returns all sets for a session fro
 create or replace function get_todays_session()
 returns json as $$
 declare
-  v_session_id uuid;
+  v_workout_name text;
   v_current_date date;
 begin
   -- Get current date in Eastern Time
   v_current_date := (current_timestamp at time zone 'America/New_York')::date;
 
-  -- Find today's session for active workout
-  select s.id into v_session_id
-  from sessions s
-  join workouts w on w.id = s.workout_id
-  where s.date = v_current_date
-    and w.is_active = true
+  -- Find active workout
+  select workout_name into v_workout_name
+  from workouts_flat
+  where workout_is_active = true
   limit 1;
 
-  if v_session_id is null then
+  if v_workout_name is null then
     return json_build_object(
       'success', false,
-      'message', 'No session found for today',
+      'message', 'No active workout found',
       'date', v_current_date
     );
   end if;
 
   -- Return session details
-  return get_session_sets_flat(v_session_id);
+  return get_session_sets_flat(v_workout_name, v_current_date);
 end;
 $$ language plpgsql security definer;
 
@@ -503,7 +371,8 @@ comment on function get_todays_session is 'Returns today''s workout session with
 -- Update a specific set in a session
 
 create or replace function update_set(
-  session_uuid uuid,
+  workout_name_param text,
+  session_date_param date,
   exercise_name_param text,
   set_number_param int,
   reps_param int default null,
@@ -511,44 +380,18 @@ create or replace function update_set(
 )
 returns json as $$
 declare
-  v_workout_id uuid;
-  v_existing_entries jsonb;
-  v_updated_entries jsonb;
-  v_found boolean := false;
+  v_current_reps int;
+  v_current_weight numeric;
 begin
-  -- Validate session exists
-  select workout_id, entries into v_workout_id, v_existing_entries
-  from sessions
-  where id = session_uuid;
+  -- Get current values
+  select reps, weight into v_current_reps, v_current_weight
+  from sessions_flat
+  where workout_name = workout_name_param
+    and session_date = session_date_param
+    and exercise_name = exercise_name_param
+    and set_number = set_number_param;
 
-  if v_workout_id is null then
-    return json_build_object(
-      'success', false,
-      'message', 'Session not found',
-      'session_id', session_uuid
-    );
-  end if;
-
-  -- Update the matching entry
-  select jsonb_agg(
-    case
-      when entry->>'exercise' = exercise_name_param
-        and (entry->>'set')::int = set_number_param
-      then
-        v_found := true,
-        jsonb_build_object(
-          'exercise', entry->>'exercise',
-          'set', (entry->>'set')::int,
-          'reps', coalesce(reps_param, (entry->>'reps')::int),
-          'weight', coalesce(weight_param, (entry->>'weight')::numeric)
-        )
-      else entry
-    end
-  )
-  into v_updated_entries
-  from jsonb_array_elements(v_existing_entries) as entry;
-
-  if not v_found then
+  if v_current_reps is null then
     return json_build_object(
       'success', false,
       'message', 'Set not found',
@@ -557,17 +400,25 @@ begin
     );
   end if;
 
-  -- Update session
-  update sessions
-  set entries = v_updated_entries
-  where id = session_uuid;
+  -- Update the set with provided values or keep current
+  update sessions_flat
+  set
+    reps = coalesce(reps_param, v_current_reps),
+    weight = coalesce(weight_param, v_current_weight)
+  where workout_name = workout_name_param
+    and session_date = session_date_param
+    and exercise_name = exercise_name_param
+    and set_number = set_number_param;
 
   return json_build_object(
     'success', true,
     'message', 'Set updated successfully',
-    'session_id', session_uuid,
+    'workout_name', workout_name_param,
+    'session_date', session_date_param,
     'exercise', exercise_name_param,
-    'set', set_number_param
+    'set', set_number_param,
+    'reps', coalesce(reps_param, v_current_reps),
+    'weight', coalesce(weight_param, v_current_weight)
   );
 end;
 $$ language plpgsql security definer;
@@ -580,52 +431,38 @@ comment on function update_set is 'Updates a specific set in a session. Only pro
 -- Delete a specific set from a session
 
 create or replace function delete_set(
-  session_uuid uuid,
+  workout_name_param text,
+  session_date_param date,
   exercise_name_param text,
   set_number_param int
 )
 returns json as $$
 declare
-  v_workout_id uuid;
-  v_existing_entries jsonb;
-  v_updated_entries jsonb;
+  v_rows_deleted int;
 begin
-  -- Validate session exists
-  select workout_id, entries into v_workout_id, v_existing_entries
-  from sessions
-  where id = session_uuid;
+  -- Delete the matching set
+  delete from sessions_flat
+  where workout_name = workout_name_param
+    and session_date = session_date_param
+    and exercise_name = exercise_name_param
+    and set_number = set_number_param;
 
-  if v_workout_id is null then
+  get diagnostics v_rows_deleted = row_count;
+
+  if v_rows_deleted = 0 then
     return json_build_object(
       'success', false,
-      'message', 'Session not found',
-      'session_id', session_uuid
+      'message', 'Set not found',
+      'exercise', exercise_name_param,
+      'set', set_number_param
     );
   end if;
-
-  -- Remove the matching entry
-  select jsonb_agg(entry)
-  into v_updated_entries
-  from jsonb_array_elements(v_existing_entries) as entry
-  where not (
-    entry->>'exercise' = exercise_name_param
-    and (entry->>'set')::int = set_number_param
-  );
-
-  -- Handle case where all entries were removed
-  if v_updated_entries is null then
-    v_updated_entries := '[]'::jsonb;
-  end if;
-
-  -- Update session
-  update sessions
-  set entries = v_updated_entries
-  where id = session_uuid;
 
   return json_build_object(
     'success', true,
     'message', 'Set deleted successfully',
-    'session_id', session_uuid,
+    'workout_name', workout_name_param,
+    'session_date', session_date_param,
     'exercise', exercise_name_param,
     'set', set_number_param
   );
@@ -635,64 +472,58 @@ $$ language plpgsql security definer;
 comment on function delete_set is 'Deletes a specific set from a session';
 
 -- =====================================================
--- 10. COMPLETE_SESSION
+-- 9. UPDATE_SESSION_NOTES
 -- =====================================================
--- Mark session as complete and calculate history
+-- Update session notes for a workout on a specific date
 
-create or replace function complete_session(
-  session_uuid uuid,
-  final_notes text default null
+create or replace function update_session_notes(
+  workout_name_param text,
+  session_date_param date,
+  session_notes_param text
 )
 returns json as $$
 declare
-  v_session_date date;
-  v_workout_id uuid;
-  v_history_result json;
+  v_rows_updated int;
 begin
-  -- Validate session exists
-  select date, workout_id into v_session_date, v_workout_id
-  from sessions
-  where id = session_uuid;
+  -- Update all rows for this session with the notes
+  update sessions_flat
+  set session_notes = session_notes_param
+  where workout_name = workout_name_param
+    and session_date = session_date_param;
 
-  if v_workout_id is null then
+  get diagnostics v_rows_updated = row_count;
+
+  if v_rows_updated = 0 then
     return json_build_object(
       'success', false,
-      'message', 'Session not found',
-      'session_id', session_uuid
+      'message', 'No session found to update notes',
+      'workout_name', workout_name_param,
+      'session_date', session_date_param
     );
   end if;
 
-  -- Update notes if provided
-  if final_notes is not null then
-    update sessions
-    set notes = final_notes
-    where id = session_uuid;
-  end if;
-
-  -- Calculate history for this session date
-  select calc_all_history(v_session_date) into v_history_result;
-
   return json_build_object(
     'success', true,
-    'message', 'Session completed and history calculated',
-    'session_id', session_uuid,
-    'date', v_session_date,
-    'history_result', v_history_result
+    'message', 'Session notes updated',
+    'workout_name', workout_name_param,
+    'session_date', session_date_param,
+    'notes', session_notes_param,
+    'rows_updated', v_rows_updated
   );
 end;
 $$ language plpgsql security definer;
 
-comment on function complete_session is 'Marks a session as complete and calculates exercise/workout history';
+comment on function update_session_notes is 'Updates session notes for a workout on a specific date';
 
 -- =====================================================
--- 11. GET_EXERCISE_HISTORY_FLAT
+-- 10. GET_EXERCISE_HISTORY_FLAT
 -- =====================================================
 -- Get history for a specific exercise from sessions_flat
 
 create or replace function get_exercise_history_flat(
   exercise_name_param text,
   days_back int default 30,
-  workout_uuid uuid default null
+  workout_name_param text default null
 )
 returns json as $$
 declare
@@ -703,6 +534,7 @@ begin
   select json_agg(
     json_build_object(
       'date', session_date,
+      'workout', workout_name,
       'set_number', set_number,
       'reps', reps,
       'weight', weight,
@@ -713,7 +545,7 @@ begin
   from sessions_flat
   where exercise_name = exercise_name_param
     and session_date >= current_date - days_back
-    and (workout_uuid is null or workout_id = workout_uuid);
+    and (workout_name_param is null or workout_name = workout_name_param);
 
   if v_history is null then
     return json_build_object(
@@ -738,7 +570,7 @@ begin
   from sessions_flat
   where exercise_name = exercise_name_param
     and session_date >= current_date - days_back
-    and (workout_uuid is null or workout_id = workout_uuid)
+    and (workout_name_param is null or workout_name = workout_name_param)
   group by session_date;
 
   return json_build_object(
@@ -754,35 +586,36 @@ $$ language plpgsql security definer;
 comment on function get_exercise_history_flat is 'Returns detailed history for a specific exercise from sessions_flat table';
 
 -- =====================================================
--- 12. GET_WORKOUT_SUMMARY_FLAT
+-- 11. GET_WORKOUT_SUMMARY_FLAT
 -- =====================================================
 -- Get summary of a workout from sessions_flat
 
 create or replace function get_workout_summary_flat(
-  session_uuid uuid
+  workout_name_param text,
+  session_date_param date
 )
 returns json as $$
 declare
-  v_session_info record;
+  v_session_notes text;
   v_summary json;
 begin
-  -- Get session info
-  select
-    s.id,
-    s.workout_id,
-    w.name as workout_name,
-    s.date,
-    s.notes
-  into v_session_info
-  from sessions s
-  join workouts w on w.id = s.workout_id
-  where s.id = session_uuid;
+  -- Get session notes
+  select session_notes into v_session_notes
+  from sessions_flat
+  where workout_name = workout_name_param
+    and session_date = session_date_param
+  limit 1;
 
-  if v_session_info.id is null then
+  if v_session_notes is null and not exists(
+    select 1 from sessions_flat
+    where workout_name = workout_name_param
+      and session_date = session_date_param
+  ) then
     return json_build_object(
       'success', false,
       'message', 'Session not found',
-      'session_id', session_uuid
+      'workout_name', workout_name_param,
+      'session_date', session_date_param
     );
   end if;
 
@@ -790,25 +623,34 @@ begin
   select json_agg(
     json_build_object(
       'exercise_name', exercise_name,
-      'total_sets', count(*),
-      'total_reps', sum(reps),
-      'total_volume', sum(reps * weight),
-      'max_weight', max(weight),
-      'avg_weight', round(avg(weight)::numeric, 2)
-    ) order by min(created_at)
+      'total_sets', total_sets,
+      'total_reps', total_reps,
+      'total_volume', total_volume,
+      'max_weight', max_weight,
+      'avg_weight', avg_weight
+    ) order by first_created
   )
   into v_summary
-  from sessions_flat
-  where session_id = session_uuid
-  group by exercise_name;
+  from (
+    select
+      exercise_name,
+      count(*) as total_sets,
+      sum(reps) as total_reps,
+      sum(reps * weight) as total_volume,
+      max(weight) as max_weight,
+      round(avg(weight)::numeric, 2) as avg_weight,
+      min(created_at) as first_created
+    from sessions_flat
+    where workout_name = workout_name_param
+      and session_date = session_date_param
+    group by exercise_name
+  ) summary_data;
 
   return json_build_object(
     'success', true,
-    'session_id', v_session_info.id,
-    'workout_id', v_session_info.workout_id,
-    'workout_name', v_session_info.workout_name,
-    'date', v_session_info.date,
-    'notes', v_session_info.notes,
+    'workout_name', workout_name_param,
+    'session_date', session_date_param,
+    'session_notes', v_session_notes,
     'summary', coalesce(v_summary, '[]'::json)
   );
 end;

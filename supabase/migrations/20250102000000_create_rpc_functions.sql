@@ -50,7 +50,7 @@ comment on function set_active_workout is 'Activates a workout plan and deactiva
 -- =====================================================
 -- 2. CALC_EXERCISE_HISTORY
 -- =====================================================
--- Aggregates exercise data for a specific date
+-- Aggregates exercise data for a specific date from sessions_flat
 -- Incremental load pattern - processes only the specified date
 -- Uses UPSERT for idempotency
 
@@ -59,25 +59,27 @@ returns json as $$
 declare
   v_rows_affected int;
   v_result json;
+  v_workout_id uuid;
 begin
-  -- Aggregate sessions into exercise_history for the specified date
+  -- Aggregate sessions_flat into exercise_history for the specified date
   with aggregated_data as (
     select
-      s.workout_id,
-      (entry->>'exercise')::text as exercise_name,
-      s.date,
+      w.id as workout_id,
+      sf.exercise_name,
+      sf.session_date,
       count(*) as total_sets,
-      sum((entry->>'reps')::int) as total_reps,
-      sum((entry->>'weight')::int * (entry->>'reps')::int) as total_volume,
-      max((entry->>'weight')::int) as max_weight,
-      avg((entry->>'weight')::int) as avg_weight
-    from sessions s,
-         jsonb_array_elements(s.entries) as entry
-    where s.date = date_override
-      and entry->>'exercise' is not null
-      and entry->>'reps' is not null
-      and entry->>'weight' is not null
-    group by s.workout_id, exercise_name, s.date
+      sum(sf.reps) as total_reps,
+      sum(sf.weight * sf.reps) as total_volume,
+      max(sf.weight) as max_weight,
+      avg(sf.weight) as avg_weight
+    from sessions_flat sf
+    join workouts_flat wf on sf.workout_name = wf.workout_name
+    join workouts w on w.name = wf.workout_name
+    where sf.session_date = date_override
+      and sf.exercise_name is not null
+      and sf.reps is not null
+      and sf.weight is not null
+    group by w.id, sf.exercise_name, sf.session_date
   )
   insert into exercise_history (
     workout_id,
@@ -92,7 +94,7 @@ begin
   select
     workout_id,
     exercise_name,
-    date,
+    session_date,
     total_sets,
     total_reps,
     total_volume,
@@ -119,7 +121,7 @@ begin
 end;
 $$ language plpgsql security definer;
 
-comment on function calc_exercise_history is 'Aggregates session data into exercise_history for a specific date. Idempotent - can be run multiple times safely.';
+comment on function calc_exercise_history is 'Aggregates session_flat data into exercise_history for a specific date. Idempotent - can be run multiple times safely.';
 
 -- =====================================================
 -- 3. CALC_WORKOUT_HISTORY
@@ -324,6 +326,7 @@ comment on function get_workout_for_day is 'Returns the workout plan for a speci
 -- =====================================================
 -- Returns aggregated workout history for the last N days
 -- Useful for progress summaries
+-- Works with the aggregated workout_history table
 
 create or replace function get_recent_progress(
   days_back int default 7,
@@ -333,12 +336,20 @@ returns json as $$
 declare
   v_history json;
 begin
-  select json_agg(row_to_json(wh.*))
+  select json_agg(row_to_json(wh.*) order by wh.date desc)
   into v_history
   from (
     select
-      wh.*,
-      w.name as workout_name
+      wh.id,
+      wh.workout_id,
+      w.name as workout_name,
+      wh.date,
+      wh.total_volume,
+      wh.total_sets,
+      wh.total_reps,
+      wh.num_exercises,
+      wh.created_at,
+      wh.updated_at
     from workout_history wh
     join workouts w on w.id = wh.workout_id
     where wh.date >= current_date - days_back
@@ -368,6 +379,7 @@ comment on function get_recent_progress is 'Returns workout history for the last
 -- =====================================================
 -- Returns history for a specific exercise
 -- Shows progression over time
+-- Aggregated from exercise_history table
 
 create or replace function get_exercise_progress(
   exercise_name_param text,
@@ -378,12 +390,22 @@ returns json as $$
 declare
   v_history json;
 begin
-  select json_agg(row_to_json(eh.*))
+  select json_agg(row_to_json(eh.*) order by eh.date desc)
   into v_history
   from (
     select
-      eh.*,
-      w.name as workout_name
+      eh.id,
+      eh.workout_id,
+      w.name as workout_name,
+      eh.exercise_name,
+      eh.date,
+      eh.total_sets,
+      eh.total_reps,
+      eh.total_volume,
+      eh.max_weight,
+      eh.avg_weight,
+      eh.created_at,
+      eh.updated_at
     from exercise_history eh
     join workouts w on w.id = eh.workout_id
     where eh.exercise_name = exercise_name_param
