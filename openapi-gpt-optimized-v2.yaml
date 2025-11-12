@@ -71,9 +71,18 @@ paths:
         - name: day_name
           in: query
           required: true
-          description: Day name (composite key part 2)
+          description: Day of the week (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
           schema:
             type: string
+            enum:
+              - monday
+              - tuesday
+              - wednesday
+              - thursday
+              - friday
+              - saturday
+              - sunday
+            example: monday
         - name: exercise_order
           in: query
           required: true
@@ -118,9 +127,18 @@ paths:
         - name: day_name
           in: query
           required: true
-          description: Day name
+          description: Day of the week (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
           schema:
             type: string
+            enum:
+              - monday
+              - tuesday
+              - wednesday
+              - thursday
+              - friday
+              - saturday
+              - sunday
+            example: monday
         - name: exercise_order
           in: query
           required: true
@@ -145,7 +163,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateWorkoutJsonRequest'
+              type: object
+              required:
+                - workout_json
+              properties:
+                workout_json:
+                  $ref: '#/components/schemas/CreateWorkoutJsonRequest'
       responses:
         '200':
           description: Workout created successfully
@@ -229,15 +252,7 @@ paths:
                   workout_name:
                     type: string
                   day:
-                    type: string
-                    enum:
-                      - monday
-                      - tuesday
-                      - wednesday
-                      - thursday
-                      - friday
-                      - saturday
-                      - sunday
+                    $ref: '#/components/schemas/DayOfWeek'
                   exercises:
                     type: array
                     items:
@@ -262,9 +277,7 @@ paths:
                 - day_name_param
               properties:
                 day_name_param:
-                  type: string
-                  description: Day name (e.g., "monday", "tuesday")
-                  example: "monday"
+                  $ref: '#/components/schemas/DayOfWeek'
                 workout_name_param:
                   type: string
                   description: Optional workout name (uses active if not provided)
@@ -533,74 +546,6 @@ paths:
   # PROGRESS TRACKING
   # =====================================================
 
-  /rpc/get_exercise_progress:
-    post:
-      operationId: getExerciseProgress
-      summary: Get exercise progress history
-      description: Returns progress data for a specific exercise over time.
-      tags:
-        - Progress
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - exercise_name_param
-              properties:
-                exercise_name_param:
-                  type: string
-                  description: Name of the exercise
-                  example: "Bench Press"
-                days_back_param:
-                  type: integer
-                  description: Number of days to look back
-                  default: 30
-                workout_name_param:
-                  type: string
-                  description: Optional filter by workout
-      responses:
-        '200':
-          description: Exercise progress data
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ProgressData'
-
-  /rpc/get_recent_progress:
-    post:
-      operationId: getRecentProgress
-      summary: Get recent workout history
-      description: Returns workout history for the last N days.
-      tags:
-        - Progress
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                days_back_param:
-                  type: integer
-                  description: Number of days to look back
-                  default: 7
-                workout_name_param:
-                  type: string
-                  description: Optional filter by workout
-      responses:
-        '200':
-          description: Recent workout history
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ProgressData'
-
   /rpc/get_exercise_history_flat:
     post:
       operationId: getExerciseHistoryFlat
@@ -619,7 +564,7 @@ paths:
               properties:
                 exercise_name_param:
                   type: string
-                days_back_param:
+                days_back:
                   type: integer
                   default: 30
                 workout_name_param:
@@ -674,6 +619,19 @@ components:
       name: apikey
 
   schemas:
+    DayOfWeek:
+      type: string
+      enum:
+        - monday
+        - tuesday
+        - wednesday
+        - thursday
+        - friday
+        - saturday
+        - sunday
+      description: "Day of the week (required). Must be one of: monday, tuesday, wednesday, thursday, friday, saturday, sunday. Use lowercase."
+      example: "monday"
+
     WorkoutFlat:
       type: object
       description: A workout template from the flat table architecture
@@ -688,8 +646,7 @@ components:
           type: boolean
           description: Whether this workout is currently active
         day_name:
-          type: string
-          description: Day of the week (monday, tuesday, etc.)
+          $ref: '#/components/schemas/DayOfWeek'
         day_notes:
           type: string
           description: Notes for this day
@@ -790,15 +747,18 @@ components:
           default: false
         days:
           type: array
-          description: Array of days with exercises
+          description: Array of days with exercises. Each day must have a valid day_name (monday, tuesday, wednesday, thursday, friday, saturday, sunday) and an exercises array.
           items:
             type: object
+            required:
+              - day_name
+              - exercises
             properties:
               day_name:
-                type: string
-                example: "monday"
+                $ref: '#/components/schemas/DayOfWeek'
               day_notes:
                 type: string
+                description: Optional notes for this day
               exercises:
                 type: array
                 items:
