@@ -140,7 +140,7 @@ Aggregated workout statistics by workout and date. Computed from `exercise_histo
 
 ## RPC Functions
 
-**Total**: 26 RPC functions (all tested and working)
+**Total**: 27 RPC functions (all tested and working)
 
 ### Aggregation Functions
 
@@ -334,6 +334,46 @@ SELECT log_multiple_sets('PPL v1', '2025-01-16', '[
   {"exercise_name": "Bench Press", "set_number": 1, "reps": 10, "weight": 185},
   {"exercise_name": "Bench Press", "set_number": 2, "reps": 9, "weight": 185}
 ]'::jsonb);
+```
+
+---
+
+#### `log_workout_day(sets_data jsonb, day_name_param text DEFAULT NULL, workout_name_param text DEFAULT NULL, session_date_param date DEFAULT current_date, session_notes_param text DEFAULT NULL)`
+
+**NEW** - Logs all sets for a workout day in a single call with smart defaults.
+
+**Smart Defaults**:
+- `workout_name_param`: Defaults to active workout if not specified
+- `day_name_param`: Defaults to current day of week if not specified
+- `session_date_param`: Defaults to today
+
+**Parameters**:
+- `sets_data`: JSON array of sets with `exercise_name`, `set_number`, `reps`, `weight`
+- `day_name_param`: Optional day name (e.g., "monday")
+- `workout_name_param`: Optional workout name
+- `session_date_param`: Optional session date
+- `session_notes_param`: Optional session notes
+
+**Returns**: JSON with workout_name, day_name, session_date, rows_inserted, rows_updated
+
+**Example 1** - Log today's workout (uses active workout and current day):
+```sql
+SELECT log_workout_day('[
+  {"exercise_name": "Bench Press", "set_number": 1, "reps": 10, "weight": 185},
+  {"exercise_name": "Bench Press", "set_number": 2, "reps": 9, "weight": 185},
+  {"exercise_name": "Incline Press", "set_number": 1, "reps": 12, "weight": 135}
+]'::jsonb);
+```
+
+**Example 2** - Log specific day and workout:
+```sql
+SELECT log_workout_day(
+  '[{"exercise_name": "Deadlift", "set_number": 1, "reps": 5, "weight": 315}]'::jsonb,
+  'friday',
+  'PPL v1',
+  '2025-01-17',
+  'Felt strong today'
+);
 ```
 
 ---
