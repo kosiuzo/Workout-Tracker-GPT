@@ -55,6 +55,83 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/WorkoutFlat'
+    patch:
+      operationId: updateWorkoutFlat
+      summary: Update a workout exercise
+      description: Updates a specific exercise in a workout template (weight, reps, notes, etc).
+      tags:
+        - Workouts
+      parameters:
+        - name: workout_name
+          in: query
+          required: true
+          description: Workout name (composite key part 1)
+          schema:
+            type: string
+        - name: day_name
+          in: query
+          required: true
+          description: Day name (composite key part 2)
+          schema:
+            type: string
+        - name: exercise_order
+          in: query
+          required: true
+          description: Exercise order (composite key part 3)
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                exercise_name:
+                  type: string
+                sets:
+                  type: integer
+                reps:
+                  type: integer
+                weight:
+                  type: integer
+                superset_group:
+                  type: string
+                exercise_notes:
+                  type: string
+      responses:
+        '200':
+          description: Workout exercise updated successfully
+    delete:
+      operationId: deleteWorkoutExercise
+      summary: Delete a workout exercise
+      description: Removes a specific exercise from a workout template.
+      tags:
+        - Workouts
+      parameters:
+        - name: workout_name
+          in: query
+          required: true
+          description: Workout name
+          schema:
+            type: string
+        - name: day_name
+          in: query
+          required: true
+          description: Day name
+          schema:
+            type: string
+        - name: exercise_order
+          in: query
+          required: true
+          description: Exercise order
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Exercise deleted successfully
+        '404':
+          description: Exercise not found
 
   /rpc/create_workout_from_json:
     post:
@@ -266,62 +343,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SessionFlat'
-
-  /rpc/log_set:
-    post:
-      operationId: logSet
-      summary: Log a single set
-      description: Logs a single set for a workout session.
-      tags:
-        - Sessions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - workout_name_param
-                - session_date_param
-                - exercise_name_param
-                - set_number_param
-                - reps_param
-                - weight_param
-              properties:
-                workout_name_param:
-                  type: string
-                  description: Workout name
-                session_date_param:
-                  type: string
-                  format: date
-                  description: Session date
-                exercise_name_param:
-                  type: string
-                  description: Exercise name
-                set_number_param:
-                  type: integer
-                  description: Set number (1, 2, 3...)
-                reps_param:
-                  type: integer
-                  description: Reps completed
-                weight_param:
-                  type: number
-                  description: Weight used
-                notes_param:
-                  type: string
-                  description: Optional notes
-      responses:
-        '200':
-          description: Set logged successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
 
   /rpc/log_multiple_sets:
     post:
@@ -645,76 +666,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/ProgressData'
 
-  # =====================================================
-  # HISTORY AGGREGATION
-  # =====================================================
-
-  /rpc/calc_exercise_history:
-    post:
-      operationId: calcExerciseHistory
-      summary: Calculate exercise history aggregates
-      description: Aggregates session data into exercise_history for a specific date. Idempotent.
-      tags:
-        - History
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                date_override:
-                  type: string
-                  format: date
-                  description: Specific date to calculate (defaults to today)
-      responses:
-        '200':
-          description: Exercise history calculated successfully
-
-  /rpc/calc_workout_history:
-    post:
-      operationId: calcWorkoutHistory
-      summary: Calculate workout history aggregates
-      description: Aggregates exercise_history into workout_history for a specific date.
-      tags:
-        - History
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                date_override:
-                  type: string
-                  format: date
-                  description: Specific date to calculate (defaults to today)
-      responses:
-        '200':
-          description: Workout history calculated successfully
-
-  /rpc/calc_all_history:
-    post:
-      operationId: calcAllHistory
-      summary: Calculate all history aggregates
-      description: Runs both exercise and workout history calculations in a single transaction.
-      tags:
-        - History
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                date_override:
-                  type: string
-                  format: date
-                  description: Specific date to calculate (defaults to today)
-      responses:
-        '200':
-          description: All history calculated successfully
-
 components:
   securitySchemes:
     apiKeyAuth:
@@ -907,5 +858,3 @@ tags:
     description: Workout session logging and tracking
   - name: Progress
     description: Progress tracking and analytics
-  - name: History
-    description: Historical data aggregation and calculations
