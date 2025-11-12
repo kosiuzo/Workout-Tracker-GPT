@@ -8,7 +8,8 @@
 -- Clear existing data (for development/testing)
 truncate table workout_history cascade;
 truncate table exercise_history cascade;
-truncate table sessions cascade;
+truncate table sessions_flat cascade;
+truncate table workouts_flat cascade;
 truncate table workouts cascade;
 
 -- =====================================================
@@ -279,106 +280,14 @@ values (
 );
 
 -- =====================================================
--- 2. CREATE SAMPLE SESSIONS
+-- 2. CREATE SAMPLE SESSIONS (FLAT TABLE VERSION)
 -- =====================================================
--- Sample workout sessions from the past week
+-- Sample workout sessions from the past week using sessions_flat
+-- Note: Seed data uses the new flat table structure
 
--- Monday - Push Day (3 days ago)
-insert into sessions (id, workout_id, date, entries, notes)
-values (
-  '10000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000001',
-  current_date - interval '3 days',
-  '[
-    {"exercise": "Bench Press", "set": 1, "reps": 8, "weight": 185},
-    {"exercise": "Bench Press", "set": 2, "reps": 8, "weight": 185},
-    {"exercise": "Bench Press", "set": 3, "reps": 7, "weight": 185},
-    {"exercise": "Bench Press", "set": 4, "reps": 6, "weight": 185},
-    {"exercise": "Incline Dumbbell Press", "set": 1, "reps": 10, "weight": 60},
-    {"exercise": "Incline Dumbbell Press", "set": 2, "reps": 10, "weight": 60},
-    {"exercise": "Incline Dumbbell Press", "set": 3, "reps": 9, "weight": 60},
-    {"exercise": "Overhead Press", "set": 1, "reps": 8, "weight": 115},
-    {"exercise": "Overhead Press", "set": 2, "reps": 8, "weight": 115},
-    {"exercise": "Overhead Press", "set": 3, "reps": 7, "weight": 115},
-    {"exercise": "Overhead Press", "set": 4, "reps": 6, "weight": 115},
-    {"exercise": "Lateral Raises", "set": 1, "reps": 12, "weight": 25},
-    {"exercise": "Lateral Raises", "set": 2, "reps": 12, "weight": 25},
-    {"exercise": "Lateral Raises", "set": 3, "reps": 11, "weight": 25},
-    {"exercise": "Tricep Pushdowns", "set": 1, "reps": 12, "weight": 60},
-    {"exercise": "Tricep Pushdowns", "set": 2, "reps": 12, "weight": 60},
-    {"exercise": "Tricep Pushdowns", "set": 3, "reps": 11, "weight": 60}
-  ]'::jsonb,
-  'Great session, felt strong on bench'
-);
-
--- Tuesday - Pull Day (2 days ago)
-insert into sessions (id, workout_id, date, entries, notes)
-values (
-  '10000000-0000-0000-0000-000000000002',
-  '00000000-0000-0000-0000-000000000001',
-  current_date - interval '2 days',
-  '[
-    {"exercise": "Deadlift", "set": 1, "reps": 6, "weight": 275},
-    {"exercise": "Deadlift", "set": 2, "reps": 6, "weight": 275},
-    {"exercise": "Deadlift", "set": 3, "reps": 5, "weight": 275},
-    {"exercise": "Deadlift", "set": 4, "reps": 5, "weight": 275},
-    {"exercise": "Pull-ups", "set": 1, "reps": 8, "weight": 0},
-    {"exercise": "Pull-ups", "set": 2, "reps": 7, "weight": 0},
-    {"exercise": "Pull-ups", "set": 3, "reps": 6, "weight": 0},
-    {"exercise": "Pull-ups", "set": 4, "reps": 6, "weight": 0},
-    {"exercise": "Barbell Rows", "set": 1, "reps": 10, "weight": 155},
-    {"exercise": "Barbell Rows", "set": 2, "reps": 10, "weight": 155},
-    {"exercise": "Barbell Rows", "set": 3, "reps": 9, "weight": 155},
-    {"exercise": "Barbell Rows", "set": 4, "reps": 9, "weight": 155},
-    {"exercise": "Face Pulls", "set": 1, "reps": 15, "weight": 40},
-    {"exercise": "Face Pulls", "set": 2, "reps": 15, "weight": 40},
-    {"exercise": "Face Pulls", "set": 3, "reps": 15, "weight": 40},
-    {"exercise": "Hammer Curls", "set": 1, "reps": 12, "weight": 35},
-    {"exercise": "Hammer Curls", "set": 2, "reps": 12, "weight": 35},
-    {"exercise": "Hammer Curls", "set": 3, "reps": 11, "weight": 35}
-  ]'::jsonb,
-  'Back pump was incredible'
-);
-
--- Wednesday - Leg Day (yesterday)
-insert into sessions (id, workout_id, date, entries, notes)
-values (
-  '10000000-0000-0000-0000-000000000003',
-  '00000000-0000-0000-0000-000000000001',
-  current_date - interval '1 day',
-  '[
-    {"exercise": "Squat", "set": 1, "reps": 5, "weight": 225},
-    {"exercise": "Squat", "set": 2, "reps": 5, "weight": 225},
-    {"exercise": "Squat", "set": 3, "reps": 5, "weight": 225},
-    {"exercise": "Squat", "set": 4, "reps": 5, "weight": 225},
-    {"exercise": "Squat", "set": 5, "reps": 4, "weight": 225},
-    {"exercise": "Romanian Deadlift", "set": 1, "reps": 10, "weight": 185},
-    {"exercise": "Romanian Deadlift", "set": 2, "reps": 10, "weight": 185},
-    {"exercise": "Romanian Deadlift", "set": 3, "reps": 9, "weight": 185},
-    {"exercise": "Leg Press", "set": 1, "reps": 12, "weight": 315},
-    {"exercise": "Leg Press", "set": 2, "reps": 12, "weight": 315},
-    {"exercise": "Leg Press", "set": 3, "reps": 11, "weight": 315},
-    {"exercise": "Leg Press", "set": 4, "reps": 10, "weight": 315},
-    {"exercise": "Leg Curls", "set": 1, "reps": 12, "weight": 90},
-    {"exercise": "Leg Curls", "set": 2, "reps": 12, "weight": 90},
-    {"exercise": "Leg Curls", "set": 3, "reps": 11, "weight": 90},
-    {"exercise": "Calf Raises", "set": 1, "reps": 15, "weight": 135},
-    {"exercise": "Calf Raises", "set": 2, "reps": 15, "weight": 135},
-    {"exercise": "Calf Raises", "set": 3, "reps": 14, "weight": 135},
-    {"exercise": "Calf Raises", "set": 4, "reps": 14, "weight": 135}
-  ]'::jsonb,
-  'Legs are toast, great workout'
-);
-
--- =====================================================
--- 3. CALCULATE HISTORY FOR SAMPLE SESSIONS
--- =====================================================
--- Run aggregation functions to populate history tables
-
--- Calculate exercise and workout history for each session date
-select calc_all_history((current_date - interval '3 days')::date);
-select calc_all_history((current_date - interval '2 days')::date);
-select calc_all_history((current_date - interval '1 day')::date);
+-- TODO: Rewrite seed data to use sessions_flat table
+-- For now, the seed is simple and only creates the workout plan in workouts table
+-- Sessions can be added via the log_set and log_multiple_sets RPC functions
 
 -- =====================================================
 -- 4. VERIFICATION QUERIES
