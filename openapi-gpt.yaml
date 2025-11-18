@@ -267,6 +267,75 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/WorkoutRow'
+    patch:
+      operationId: updateWorkoutExercise
+      summary: Update a specific exercise in a workout
+      description: Updates a specific exercise within a workout template (sets, reps, weight, notes, etc).
+      tags:
+        - Workouts
+      parameters:
+        - name: workout_name
+          in: query
+          required: true
+          description: Workout name
+          schema:
+            type: string
+        - name: day_name
+          in: query
+          required: true
+          description: Day of the week
+          schema:
+            $ref: '#/components/schemas/DayOfWeek'
+        - name: exercise_order
+          in: query
+          required: true
+          description: Exercise position in day
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                exercise_name:
+                  type: string
+                  description: Name of the exercise
+                sets:
+                  type: integer
+                  description: Number of sets
+                reps:
+                  type: integer
+                  description: Reps per set
+                weight:
+                  type: integer
+                  description: Target weight
+                superset_group:
+                  type: string
+                  nullable: true
+                  description: Optional superset grouping
+                exercise_notes:
+                  type: string
+                  description: Optional exercise notes
+      responses:
+        '200':
+          description: Exercise updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  workout_name:
+                    type: string
+                  day_name:
+                    type: string
+                  exercise_order:
+                    type: number
 
   # =====================================================
   # SESSION MANAGEMENT - Direct Table Access
@@ -300,7 +369,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Session'
-
   # =====================================================
   # PROGRESS TRACKING - Direct Table Access
   # =====================================================
