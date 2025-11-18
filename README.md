@@ -1,239 +1,358 @@
-# Workout Tracker GPT
+# Workout Tracker GPT - Database Schema
 
-> A conversational workout tracking system powered by Supabase and OpenAI's Custom GPT. Track workouts, log sessions, and analyze progress through natural language.
+## Workouts Table
 
-[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | Primary key |
+| `workout_name` | text | Workout name (allows duplicates) |
+| `workout_description` | text | Workout description |
+| `workout_is_active` | boolean | Currently active workout |
+| `day_name` | text | Day name (e.g., "monday", "tuesday") |
+| `day_notes` | text | Notes for this workout day |
+| `exercise_order` | float | Exercise position in day (allows 1.5 between 1 and 2) |
+| `exercise_name` | text | Exercise name |
+| `sets` | int | Target number of sets |
+| `reps` | int | Target number of reps |
+| `weight` | int | Target weight |
+| `superset_group` | text | Superset grouping (e.g., "A", "B", null) |
+| `exercise_notes` | text | Exercise-specific notes |
+| `created_at` | timestamp | Row creation time |
+| `updated_at` | timestamp | Row update time |
 
-## Features
+## Sessions Table
 
-✅ **Flexible Workout Templates** - JSONB-based structure supports any workout split
-✅ **Conversational Logging** - Natural language session tracking via Custom GPT
-✅ **Progress Analytics** - Automatic aggregation of volume, PRs, and trends
-✅ **Smart Updates** - Surgical JSON editing for precise weight/rep modifications
-✅ **Single Active Plan** - Always know "what's my workout today?"
-✅ **Production Ready** - RLS-enabled, scalable schema, comprehensive RPC functions
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | Primary key |
+| `workout_name` | text | Workout name |
+| `session_date` | date | Session date |
+| `session_notes` | text | Session notes |
+| `exercise_name` | text | Exercise name |
+| `sets` | int | Number of sets performed (e.g., 3) |
+| `reps` | int | Reps per set (e.g., 10) |
+| `weight` | numeric(10,2) | Weight used |
+| `created_at` | timestamp | Row creation time |
+| `updated_at` | timestamp | Row update time |
 
-## Quick Start
+**Note**: One row represents "X sets of Y reps at Z weight" (e.g., one row = "3 sets of 10 reps at 185 lbs"). Multiple rows for the same exercise on the same date with different set/rep/weight combinations are allowed for flexibility.
 
-```bash
-# Start local Supabase
-supabase start
+## Exercise History Table
 
-# Apply migrations and seed data
-supabase db reset
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | Primary key |
+| `workout_name` | text | Workout name |
+| `exercise_name` | text | Exercise name |
+| `date` | date | Session date |
+| `total_sets` | int | Total sets performed |
+| `total_reps` | int | Total reps performed |
+| `total_volume` | numeric | Total weight × reps |
+| `max_weight` | numeric | Heaviest weight used |
+| `avg_weight` | numeric | Average weight |
+| `created_at` | timestamp | Row creation time |
+| `updated_at` | timestamp | Row update time |
 
-# Open Supabase Studio
-open http://127.0.0.1:54323
-```
+## Workout History Table
 
-**See [SETUP.md](./docs/SETUP.md) for complete installation guide.**
-
-## Architecture
-
-```
-Custom GPT (Natural Language)
-         ↓
-OpenAPI 3.1 Specification
-         ↓
-Supabase REST API + RPC Functions
-         ↓
-PostgreSQL + JSONB Storage
-```
-
-**Read [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for system design details.**
-
-## Project Structure
-
-```
-Workout-Tracker-GPT/
-├── supabase/
-│   ├── migrations/
-│   │   ├── 20250101000000_create_workout_tracker_schema.sql
-│   │   ├── 20250101000001_create_rpc_functions.sql
-│   │   └── 20250101000002_create_json_manipulation_functions.sql
-│   ├── seed.sql                    # Sample Push/Pull/Legs plan
-│   └── config.toml                 # Supabase configuration
-├── docs/
-│   ├── ARCHITECTURE.md             # System design documentation
-│   ├── SETUP.md                    # Installation & deployment guide
-│   └── implementation-notes/       # Implementation details and tooling
-├── openapi-gpt-optimized.yaml      # GPT-optimized API spec
-├── openapi-all-endpoints.yaml      # Complete API reference
-└── README.md                       # This file
-```
-
-## Database Schema
-
-### Core Tables
-
-**`workouts`** - Workout templates with flexible JSONB structure
-```json
-{
-  "monday": [
-    {"exercise": "Bench Press", "sets": 4, "reps": 8, "weight": 185}
-  ]
-}
-```
-
-**`sessions`** - Actual workout logs with set-by-set details
-```json
-[
-  {"exercise": "Bench Press", "set": 1, "reps": 8, "weight": 185},
-  {"exercise": "Bench Press", "set": 2, "reps": 7, "weight": 185}
-]
-```
-
-**`exercise_history`** - Daily aggregated totals per exercise
-**`workout_history`** - Daily aggregated totals per workout
-
-### Key RPC Functions
-
-| Function | Purpose |
-|----------|---------|
-| `set_active_workout(uuid)` | Activate a workout plan |
-| `get_workout_for_day(day_name)` | Get today's exercises |
-| `calc_all_history(date)` | Aggregate session data |
-| `update_workout_day_weight(...)` | Update template weight |
-| `get_recent_progress(days_back)` | Progress summary |
-| `get_exercise_progress(exercise)` | Exercise trend analysis |
-
-**See [ARCHITECTURE.md](./docs/ARCHITECTURE.md#rpc-functions) for complete function reference.**
-
-## Usage Examples
-
-### Via Custom GPT
-
-```
-You: "What's my workout for today?"
-GPT: Shows Monday's exercises from active plan
-
-You: "Log my session: bench press 185x8, 185x7, 185x6"
-GPT: Creates session with 3 sets, calculates history
-
-You: "Show my progress this week"
-GPT: Summarizes total volume, sets, exercises
-
-You: "I'm ready to increase bench press to 195"
-GPT: Updates workout template for next session
-```
-
-### Get OpenAPI Specification
-
-The REST API auto-generates an OpenAPI 2.0 (Swagger) specification based on your database schema:
-
-```bash
-# Download the OpenAPI spec
-curl 'https://your-project.supabase.co/rest/v1/' \
-  -H "apikey: YOUR_ANON_KEY" \
-  -H "Authorization: Bearer YOUR_ANON_KEY" \
-  > swagger_2.0.yml
-
-# For local development
-curl 'http://127.0.0.1:54321/rest/v1/' \
-  -H "apikey: YOUR_LOCAL_ANON_KEY" \
-  -H "Authorization: Bearer YOUR_LOCAL_ANON_KEY" \
-  > swagger_2.0.yml
-```
-
-Note: This returns OpenAPI 2.0 format. Convert to 3.x using [Swagger Editor](https://editor.swagger.io/) if needed.
-
-### Via REST API
-
-```bash
-# Get active workout
-curl "https://your-project.supabase.co/rest/v1/rpc/get_active_workout" \
-  -X POST \
-  -H "apikey: YOUR_ANON_KEY"
-
-# Log a session
-curl "https://your-project.supabase.co/rest/v1/sessions" \
-  -X POST \
-  -H "apikey: YOUR_ANON_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "workout_id": "uuid-here",
-    "date": "2025-01-15",
-    "entries": [
-      {"exercise": "Bench Press", "set": 1, "reps": 8, "weight": 185}
-    ]
-  }'
-```
-
-## Deployment
-
-### Local Development
-```bash
-supabase start
-supabase db reset
-```
-
-### Production
-```bash
-supabase login
-supabase link --project-ref your-ref
-supabase db push
-```
-
-**Full deployment guide: [SETUP.md](./docs/SETUP.md#production-deployment)**
-
-## Custom GPT Setup
-
-1. Create Supabase project and get API credentials
-2. Update [openapi-gpt-optimized.yaml](./openapi-gpt-optimized.yaml) with your project URL
-3. Create Custom GPT at [chat.openai.com/gpts/editor](https://chat.openai.com/gpts/editor)
-4. Import OpenAPI spec and configure API key authentication
-5. Test with natural language prompts
-
-**Complete walkthrough: [SETUP.md](./docs/SETUP.md#custom-gpt-configuration)**
-
-## Tech Stack
-
-- **Backend**: Supabase (PostgreSQL + REST API)
-- **Database**: PostgreSQL 17 with JSONB
-- **API**: Supabase REST + Custom RPC Functions
-- **AI**: OpenAI Custom GPT with OpenAPI 3.1
-- **Local Dev**: Supabase CLI + Docker
-
-## Key Design Decisions
-
-**Why JSONB for workouts?**
-Flexibility. Users can add supersets, tempo, notes, rest times without schema migrations.
-
-**Why incremental aggregation?**
-Performance. Calculate history only for changed dates, not full table scans.
-
-**Why RPC functions?**
-Encapsulation. Complex operations (aggregation, JSON updates) run server-side with transactional safety.
-
-**Why single active workout?**
-UX simplicity. "What's my workout today?" always has one answer.
-
-## Roadmap
-
-- [ ] Progressive overload suggestions
-- [ ] Workout template library
-- [ ] Exercise PR tracking
-- [ ] Multi-user support
-- [ ] Analytics dashboard
-- [ ] Mobile-optimized interface
-
-## Contributing
-
-This is a personal project, but suggestions are welcome! Open an issue or submit a PR.
-
-## License
-
-MIT License - see [LICENSE](./LICENSE)
-
-## Resources
-
-- [Supabase Documentation](https://supabase.com/docs)
-- [OpenAPI 3.1 Specification](https://swagger.io/specification/)
-- [Custom GPT Guide](https://help.openai.com/en/articles/8554397-creating-a-gpt)
-- [PostgreSQL JSONB](https://www.postgresql.org/docs/current/datatype-json.html)
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | Primary key |
+| `workout_name` | text | Workout name |
+| `date` | date | Session date |
+| `total_volume` | numeric | Total volume across all exercises |
+| `total_sets` | int | Total sets performed |
+| `total_reps` | int | Total reps performed |
+| `num_exercises` | int | Number of unique exercises |
+| `created_at` | timestamp | Row creation time |
+| `updated_at` | timestamp | Row update time |
 
 ---
 
-**Built with ❤️ for lifters who love data-driven training.**
+## RPC Functions
+
+### 1. create_workout
+Creates a new workout with name and description. Fails if the workout name already exists (prevents duplicates).
+
+**Signature:**
+```sql
+create_workout(p_workout_name text, p_workout_description text) → jsonb
+```
+
+**Parameters:**
+- `p_workout_name` (text): Unique name for the workout (e.g., "Push/Pull/Legs v1")
+- `p_workout_description` (text): Description of the workout (e.g., "Classic PPL split focusing on progressive overload")
+
+**Returns:** JSON object with success status and details
+```json
+{
+  "success": true,
+  "message": "Workout created successfully",
+  "workout_name": "Push/Pull/Legs v1",
+  "workout_description": "Classic PPL split focusing on progressive overload"
+}
+```
+
+**Error Handling:**
+- Raises exception if workout name already exists
+
+**Example:**
+```sql
+select create_workout(
+  'Push/Pull/Legs v1',
+  'Classic PPL split focusing on progressive overload'
+);
+```
+
+---
+
+### 2. add_workout_day
+Appends exercises for a specific day to an existing workout. Call this function once per day to build a multi-day workout while avoiding payload limits.
+
+**Signature:**
+```sql
+add_workout_day(
+  p_workout_name text,
+  p_day_name text,
+  p_exercises jsonb
+) → jsonb
+```
+
+**Parameters:**
+- `p_workout_name` (text): Name of the workout to append to
+- `p_day_name` (text): Day name in lowercase (e.g., "monday", "tuesday", "wednesday")
+- `p_exercises` (jsonb): JSON array of exercise objects
+
+**Exercise Object Structure:**
+```json
+{
+  "exercise_name": "Bench Press",
+  "sets": 4,
+  "reps": 8,
+  "weight": 185,
+  "exercise_order": 1,
+  "superset_group": null,
+  "exercise_notes": "Barbell, touch chest each rep"
+}
+```
+
+**Returns:** JSON object with success status and exercise count
+```json
+{
+  "success": true,
+  "message": "Exercises added successfully",
+  "workout_name": "Push/Pull/Legs v1",
+  "day_name": "monday",
+  "exercises_added": 2
+}
+```
+
+**Error Handling:**
+- Raises exception if workout does not exist
+
+**Example:**
+```sql
+select add_workout_day(
+  'Push/Pull/Legs v1',
+  'monday',
+  '[
+    {"exercise_name": "Bench Press", "sets": 4, "reps": 8, "weight": 185, "exercise_order": 1, "superset_group": null, "exercise_notes": "Barbell"},
+    {"exercise_name": "Incline Press", "sets": 3, "reps": 10, "weight": 140, "exercise_order": 2, "superset_group": null, "exercise_notes": "Dumbbells"}
+  ]'::jsonb
+);
+```
+
+---
+
+### 3. set_active_workout
+Sets the specified workout as the active workout. Automatically deactivates all other workouts.
+
+**Signature:**
+```sql
+set_active_workout(p_workout_name text) → jsonb
+```
+
+**Parameters:**
+- `p_workout_name` (text): Name of the workout to activate
+
+**Returns:** JSON object with success status
+```json
+{
+  "success": true,
+  "message": "Workout activated successfully",
+  "workout_name": "Push/Pull/Legs v1",
+  "is_active": true
+}
+```
+
+**Error Handling:**
+- Raises exception if workout does not exist
+
+**Example:**
+```sql
+select set_active_workout('Push/Pull/Legs v1');
+```
+
+---
+
+### 4. get_active_workout
+Retrieves the currently active workout grouped by day, excluding internal placeholder rows.
+
+**Signature:**
+```sql
+get_active_workout() → jsonb
+```
+
+**Parameters:** None
+
+**Returns:** JSON object with workout details and exercises grouped by day
+```json
+{
+  "workout_name": "Push/Pull/Legs v1",
+  "workout_description": "Classic PPL split focusing on progressive overload",
+  "days": {
+    "monday": [
+      {
+        "exercise_name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "weight": 185,
+        "exercise_order": 1,
+        "superset_group": null,
+        "exercise_notes": "Barbell, touch chest each rep"
+      },
+      {
+        "exercise_name": "Incline Press",
+        "sets": 3,
+        "reps": 10,
+        "weight": 140,
+        "exercise_order": 2,
+        "superset_group": null,
+        "exercise_notes": "Dumbbells"
+      }
+    ],
+    "tuesday": [...]
+  }
+}
+```
+
+**Error Handling:**
+- Raises exception if no active workout exists
+
+**Example:**
+```sql
+select get_active_workout();
+```
+
+---
+
+### 5. log_current_workout
+Logs the active workout for a specified day into the sessions table. Copies sets, reps, and weight from the workout template.
+
+**Signature:**
+```sql
+log_current_workout(
+  p_day_name text DEFAULT NULL,
+  p_session_date date DEFAULT CURRENT_DATE
+) → jsonb
+```
+
+**Parameters:**
+- `p_day_name` (text, optional): Day name in lowercase (e.g., "monday"). If NULL, uses the current day of the week
+- `p_session_date` (date, optional): Session date. Defaults to today
+
+**Returns:** JSON object with success status and exercise count logged
+```json
+{
+  "success": true,
+  "message": "Workout logged successfully",
+  "workout_name": "Push/Pull/Legs v1",
+  "session_date": "2025-01-25",
+  "day_name": "monday",
+  "exercises_logged": 2
+}
+```
+
+**Error Handling:**
+- Raises exception if no active workout exists
+- Raises exception if no exercises found for the specified day
+
+**Examples:**
+```sql
+-- Log today's workout using current day of week
+select log_current_workout();
+
+-- Log a specific day with explicit date
+select log_current_workout('monday', '2025-01-25'::date);
+
+-- Log a past workout for a specific date
+select log_current_workout('friday', '2025-01-24'::date);
+```
+
+---
+
+## Workflow Example
+
+```sql
+-- 1. Create a new workout
+select create_workout(
+  'Push/Pull/Legs v1',
+  'Classic PPL split focusing on progressive overload'
+);
+
+-- 2. Add exercises for Monday (push day)
+select add_workout_day(
+  'Push/Pull/Legs v1',
+  'monday',
+  '[
+    {"exercise_name": "Bench Press", "sets": 4, "reps": 8, "weight": 185, "exercise_order": 1, "superset_group": null, "exercise_notes": "Barbell"},
+    {"exercise_name": "Incline Press", "sets": 3, "reps": 10, "weight": 140, "exercise_order": 2, "superset_group": null, "exercise_notes": "Dumbbells"}
+  ]'::jsonb
+);
+
+-- 3. Add exercises for Tuesday (pull day)
+select add_workout_day(
+  'Push/Pull/Legs v1',
+  'tuesday',
+  '[
+    {"exercise_name": "Deadlift", "sets": 4, "reps": 6, "weight": 275, "exercise_order": 1, "superset_group": null, "exercise_notes": "Conventional"},
+    {"exercise_name": "Pull-ups", "sets": 4, "reps": 8, "weight": 0, "exercise_order": 2, "superset_group": null, "exercise_notes": "Bodyweight"}
+  ]'::jsonb
+);
+
+-- 4. Set as active
+select set_active_workout('Push/Pull/Legs v1');
+
+-- 5. Get active workout to view
+select get_active_workout();
+
+-- 6. Log today's workout
+select log_current_workout();
+
+-- 7. Log a specific past workout
+select log_current_workout('friday', '2025-01-24'::date);
+```
+
+---
+
+## Key Design Notes
+
+### Workout Creation
+- Workouts are created with metadata (name, description) and then populated with exercise data
+- Placeholder rows are created internally to track the workout metadata
+- Placeholder rows are automatically filtered out from results
+
+### Sessions vs Workouts
+- **Workouts Table**: Template/plan for exercises with target sets, reps, and weight
+- **Sessions Table**: Actual logged workouts with actual sets, reps, and weight performed
+- One session row represents "X sets of Y reps at Z weight" (e.g., "3 sets of 10 reps at 185 lbs")
+- Multiple session rows allowed for same exercise on same date (different set/rep/weight combinations)
+
+### Duplicate Prevention
+- Workout names must be unique
+- `create_workout` will fail if the name already exists
+- Plan versions as part of the name (e.g., "PPL v1", "PPL v2")
+
+### Payload Optimization
+- `add_workout_day` accepts one day's exercises per call to avoid payload limits
+- Build multi-day workouts incrementally (one call per day)
